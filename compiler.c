@@ -98,10 +98,23 @@ Lexer* init_lexer(char* buffer){
 }
 
 void lexer_advance(Lexer* lexer){
-    lexer->position++;
-    lexer->current_char = lexer->buffer[lexer->position];
-    lexer->column++;
-    //What if end of string?
+    if(lexer->position < lexer->buffer_len){
+        lexer->position++;
+        lexer->current_char = lexer->buffer[lexer->position];
+        lexer->column++;
+    } else {
+        lexer->current_char = '\0';
+    }
+}
+
+void lexer_skip_whitespace(Lexer* lexer){
+    while(lexer->current_char == ' ' || lexer->current_char == '\n'){
+        if(lexer->current_char == '\n'){
+            lexer->line++;
+            lexer->column=0;
+        }
+        lexer_advance(lexer);
+    }
 }
 
 long get_file_size(FILE* file){
@@ -148,8 +161,14 @@ int main(int argc, char* argv[]) {
     
     Lexer* lexer = init_lexer(buffer);
     
-    printf("First char: '%c' (line %zu, column %zu)\n", lexer->current_char, lexer->line, lexer->column);
-    
+    while(lexer->current_char != '\0'){
+        if (lexer->current_char == ' ' || lexer->current_char == '\n') {
+            lexer_skip_whitespace(lexer);
+            continue;
+        }
+        printf("First char: '%c' (line %zu, column %zu)\n", lexer->current_char, lexer->line, lexer->column);
+        lexer_advance(lexer);
+    }
     
     free(buffer);
     free(lexer);
