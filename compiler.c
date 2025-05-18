@@ -97,6 +97,14 @@ Lexer* init_lexer(char* buffer){
     return lexer;
 }
 
+Token* create_token(TokenType type, char* lexeme, int line){
+    Token* token = malloc(sizeof(Token));
+    token->type = type;
+    token->lexeme = strdup(lexeme);
+    token->line;
+    return token;
+}
+
 void lexer_advance(Lexer* lexer){
     if(lexer->position < lexer->buffer_len){
         lexer->position++;
@@ -113,6 +121,36 @@ void lexer_skip_whitespace(Lexer* lexer){
             lexer->line++;
             lexer->column=0;
         }
+        lexer_advance(lexer);
+    }
+}
+
+char lexer_peek(Lexer* lexer){
+    if(lexer->position + 1 >= lexer->buffer_len){
+        return '\0';
+    }
+    return lexer->buffer[lexer->position + 1];
+}
+
+void lexer_skip_comments(Lexer* lexer){
+    if(lexer->current_char == '/' && lexer_peek(lexer) == '/'){
+        while(lexer->current_char != '\n' && lexer->current_char != '\0'){
+            lexer_advance(lexer);
+        }
+    }
+
+    if(lexer->current_char == '/' && lexer_peek(lexer) == '*'){
+        lexer_advance(lexer);
+        lexer_advance(lexer);
+
+        while(lexer->current_char != '*' && lexer_peek(lexer) != '/' && lexer->current_char != '\0'){
+            if(lexer->current_char == '\n'){
+                lexer->line++;
+                lexer->column=0;
+            } 
+            lexer_advance(lexer);
+        }
+        lexer_advance(lexer);
         lexer_advance(lexer);
     }
 }
@@ -166,7 +204,11 @@ int main(int argc, char* argv[]) {
             lexer_skip_whitespace(lexer);
             continue;
         }
-        printf("First char: '%c' (line %zu, column %zu)\n", lexer->current_char, lexer->line, lexer->column);
+        if(lexer->current_char == '/' && lexer_peek(lexer) == '/' || lexer_peek(lexer) == '*'){
+            lexer_skip_comments(lexer);
+            continue;
+        }
+        printf("Current char: '%c' (line %zu, column %zu)\n", lexer->current_char, lexer->line, lexer->column);
         lexer_advance(lexer);
     }
     
