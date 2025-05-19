@@ -168,16 +168,16 @@ void lexer_skip_comments(Lexer* lexer){
     Escape sequences 
     Unclosed string or char
 */
-void lexer_char_or_string(Lexer* lexer, int line){
+Token* lexer_char_or_string(Lexer* lexer, int line){
     if(lexer->current_char == '\''){
         lexer_advance(lexer);
         char token_buffer[2] = {lexer->current_char, '\0'};
         lexer_advance(lexer);
         lexer_advance(lexer);
-        printf("Token char: %c\n", token_buffer[0]);
 
         Token* token = create_token(TKN_CHAR_LIT, token_buffer, line);
         token->value.char_value = token_buffer[0];
+        return token;
     }
     
     if(lexer->current_char == '"'){
@@ -192,11 +192,12 @@ void lexer_char_or_string(Lexer* lexer, int line){
 
         lexer_advance(lexer);
         token_buffer[token_position] = '\0';
-        printf("Token string: %s\n", token_buffer);
 
         Token* token = create_token(TKN_STRING_LIT, token_buffer, line);
         token->value.string_value = token->lexeme;
+        return token;
     }
+    return create_token(TKN_ERROR, "Error", line);
 }
 
 long get_file_size(FILE* file){
@@ -252,7 +253,18 @@ int main(int argc, char* argv[]) {
         }
         if (lexer->current_char == '\'' || lexer->current_char == '"') {
             int line = lexer->line;
-            lexer_char_or_string(lexer, line);
+            Token* token = lexer_char_or_string(lexer, line);
+            if(token->type == TKN_CHAR_LIT){
+                printf("TKN_CHAR_LIT: %s - line %d\n", token->lexeme, token->line);
+            }
+        
+            if(token->type == TKN_STRING_LIT){
+                printf("TKN_STRING_LIT: %s - line %d\n", token->lexeme, token->line);
+
+            }
+            
+            free(token->lexeme);
+            free(token);
             continue;
         }
 
