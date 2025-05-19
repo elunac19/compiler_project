@@ -24,12 +24,8 @@ typedef enum {
     //Identifiers and literals
     TKN_ID,
     TKN_CHAR_LIT,
-    TKN_INT_LIT,
-    TKN_SHORT_LIT,
-    TKN_LONG_LIT,
-    TKN_FLOAT_LIT,
-    TKN_DOUBLE_LIT,
-    TKN_UNSIGNED_LIT,
+    TKN_NUMBER_LIT,
+    TKN_DECIMAL_LIT,
     TKN_STRING_LIT,
 
     //Arithmetic Operators
@@ -119,12 +115,8 @@ const char* token_type_to_string(TokenType type) {
         // Identifiers and literals
         case TKN_ID: return "TKN_ID";
         case TKN_CHAR_LIT: return "TKN_CHAR_LIT";
-        case TKN_INT_LIT: return "TKN_INT_LIT";
-        case TKN_SHORT_LIT: return "TKN_SHORT_LIT";
-        case TKN_LONG_LIT: return "TKN_LONG_LIT";
-        case TKN_FLOAT_LIT: return "TKN_FLOAT_LIT";
-        case TKN_DOUBLE_LIT: return "TKN_DOUBLE_LIT";
-        case TKN_UNSIGNED_LIT: return "TKN_UNSIGNED_LIT";
+        case TKN_NUMBER_LIT: return "TKN_INT_LIT";
+        case TKN_DECIMAL_LIT: return "TKN_LONG_LIT";
         case TKN_STRING_LIT: return "TKN_STRING_LIT";
 
         // Arithmetic Operators
@@ -261,13 +253,13 @@ Token* lexer_char_or_string(Lexer* lexer, int line){
         token->value.char_value = token_buffer[0];
         return token;
     }
-    
+
     if(lexer->current_char == '"'){
         char token_buffer[256]; 
         int token_position = 0;
         lexer_advance(lexer);
 
-        while(lexer->current_char != '"' && lexer->current_char != '\0'){
+        while(lexer->current_char != '"' && lexer->current_char != '\0' && token_position < 255){
             token_buffer[token_position++] = lexer->current_char;
             lexer_advance(lexer);
         }
@@ -430,6 +422,42 @@ Token* lexer_symbol(Lexer* lexer, int line){
     }
 }
 
+/*[NICE TO HAVE]
+   Better handling for longs and float: 456L, 0xF, 2.7f
+*/
+Token* lexer_number(Lexer* lexer, int line){
+    char token_buffer[256];
+    int token_position = 0;
+    int is_float = 0;
+
+    while (isdigit(lexer->current_char) && token_position < 255) {
+        token_buffer[token_position++] = lexer->current_char;
+        lexer_advance(lexer);
+    }
+
+    if(lexer->current_char == '.' && isdigit(lexer_peek(lexer))) {
+        is_float = 1;
+        token_buffer[token_position++] = lexer->current_char;
+        lexer_advance(lexer);
+
+        while (isdigit(lexer->current_char) && token_position < 255) {
+            token_buffer[token_position++] = lexer->current_char;
+            lexer_advance(lexer);
+        }
+    }
+
+    token_buffer[token_position++] = '\0';
+    Token* token;
+    if(is_float){
+        token = create_token(TKN_DECIMAL_LIT, token_buffer, line);
+        token->value.float_value = (atof(token_buffer));
+    } else {
+        token = create_token(TKN_NUMBER_LIT, token_buffer, line);
+        token->value.int_value = (atoi(token_buffer));
+    }
+    return token;
+}
+
 long get_file_size(FILE* file){
     fseek(file, 0, SEEK_END);
     long size = ftell(file);
@@ -495,6 +523,15 @@ int main(int argc, char* argv[]) {
             Token* token = lexer_symbol(lexer, line);
             printf("--- %s -> Lexeme: %s (line %d)\n", token_type_to_string(token->type), token->lexeme, token->line);
 
+            free(token->lexeme);
+            free(token);
+            continue;
+        }
+        if (isdigit(lexer->current_char) || (lexer->current_char == '.' && isdigit(lexer_peek(lexer)))) {
+            int line = lexer->line;
+            Token* token = lexer_number(lexer, line);
+            printf("--- %s -> Lexeme: %s (line %d)\n", token_type_to_string(token->type), token->lexeme, token->line);
+            
             free(token->lexeme);
             free(token);
             continue;
