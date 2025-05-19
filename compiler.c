@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <string.h>
 
 typedef enum {
     //DataType Keywords
@@ -63,6 +64,9 @@ typedef enum {
 
 } TokenType;
 
+/*[NICE TO HAVE]
+    ValueType 
+*/
 typedef struct {
     TokenType type;
     char* lexeme; 
@@ -115,8 +119,8 @@ const char* token_type_to_string(TokenType type) {
         // Identifiers and literals
         case TKN_ID: return "TKN_ID";
         case TKN_CHAR_LIT: return "TKN_CHAR_LIT";
-        case TKN_NUMBER_LIT: return "TKN_INT_LIT";
-        case TKN_DECIMAL_LIT: return "TKN_LONG_LIT";
+        case TKN_NUMBER_LIT: return "TKN_NUMBER_LIT";
+        case TKN_DECIMAL_LIT: return "TKN_DECIMAL_LIT";
         case TKN_STRING_LIT: return "TKN_STRING_LIT";
 
         // Arithmetic Operators
@@ -156,7 +160,7 @@ const char* token_type_to_string(TokenType type) {
     }
 }
 
-Lexer* init_lexer(char* buffer){
+Lexer* init_lexer(char* buffer) {
     Lexer* lexer = malloc(sizeof(Lexer));
     lexer->buffer = buffer;
     lexer->buffer_len = strlen(buffer);
@@ -167,7 +171,7 @@ Lexer* init_lexer(char* buffer){
     return lexer;
 }
 
-Token* create_token(TokenType type, char* lexeme, int line){
+Token* create_token(TokenType type, char* lexeme, int line) {
     Token* token = malloc(sizeof(Token));
     token->type = type;
     token->lexeme = strdup(lexeme);
@@ -175,7 +179,7 @@ Token* create_token(TokenType type, char* lexeme, int line){
     return token;
 }
 
-int issybol(char c){
+int issybol(char c) {
     switch (c) {
         case '+': case '-': case '*': case '/': case '%':
         case '=': case '<': case '>': case '!':
@@ -187,7 +191,7 @@ int issybol(char c){
     }
 }
 
-void lexer_advance(Lexer* lexer){
+void lexer_advance(Lexer* lexer) {
     if(lexer->position < lexer->buffer_len){
         lexer->position++;
         lexer->current_char = lexer->buffer[lexer->position];
@@ -197,7 +201,7 @@ void lexer_advance(Lexer* lexer){
     }
 }
 
-void lexer_skip_whitespace(Lexer* lexer){
+void lexer_skip_whitespace(Lexer* lexer) {
     while(lexer->current_char == ' ' || lexer->current_char == '\n'){
         if(lexer->current_char == '\n'){
             lexer->line++;
@@ -207,14 +211,14 @@ void lexer_skip_whitespace(Lexer* lexer){
     }
 }
 
-char lexer_peek(Lexer* lexer){
+char lexer_peek(Lexer* lexer) {
     if(lexer->position + 1 >= lexer->buffer_len){
         return '\0';
     }
     return lexer->buffer[lexer->position + 1];
 }
 
-void lexer_skip_comments(Lexer* lexer){
+void lexer_skip_comments(Lexer* lexer) {
     if(lexer->current_char == '/' && lexer_peek(lexer) == '/'){
         while(lexer->current_char != '\n' && lexer->current_char != '\0'){
             lexer_advance(lexer);
@@ -242,7 +246,7 @@ void lexer_skip_comments(Lexer* lexer){
     Unclosed string or char
     Error handling
 */
-Token* lexer_char_or_string(Lexer* lexer, int line){
+Token* lexer_char_or_string(Lexer* lexer, int line) {
     if(lexer->current_char == '\''){
         lexer_advance(lexer);
         char token_buffer[] = {lexer->current_char, '\0'};
@@ -284,7 +288,7 @@ Token* lexer_char_or_string(Lexer* lexer, int line){
     & (pointers)
     PERCHANCE, MAYHAPSS -> refactor repeated code
 */
-Token* lexer_symbol(Lexer* lexer, int line){
+Token* lexer_symbol(Lexer* lexer, int line) {
     switch (lexer->current_char) {
         case '+': {
             char token_buffer[] = {lexer->current_char, '\0'};
@@ -424,8 +428,9 @@ Token* lexer_symbol(Lexer* lexer, int line){
 
 /*[NICE TO HAVE]
    Better handling for longs and float: 456L, 0xF, 2.7f
+   Better error handling and reporting: 3. invalid
 */
-Token* lexer_number(Lexer* lexer, int line){
+Token* lexer_number(Lexer* lexer, int line) {
     char token_buffer[256];
     int token_position = 0;
     int is_float = 0;
@@ -456,6 +461,31 @@ Token* lexer_number(Lexer* lexer, int line){
         token->value.int_value = (atoi(token_buffer));
     }
     return token;
+}
+
+Token* lexer_identifier(Lexer* lexer, int line) {
+    char token_buffer[256];
+    int token_position = 0;
+
+    while((isalnum(lexer->current_char) || lexer->current_char == '_') && token_position < 255) {
+        token_buffer[token_position++] = lexer->current_char;
+        lexer_advance(lexer);
+    }
+
+    token_buffer[token_position++] = '\0';
+    
+    if (strcmp(token_buffer, "char") == 0) return create_token(TKN_CHAR, token_buffer, line);
+    if (strcmp(token_buffer, "int") == 0) return create_token(TKN_INT, token_buffer, line);
+    if (strcmp(token_buffer, "long") == 0) return create_token(TKN_LONG, token_buffer, line);
+    if (strcmp(token_buffer, "float") == 0) return create_token(TKN_FLOAT, token_buffer, line);
+    if (strcmp(token_buffer, "double") == 0) return create_token(TKN_DOUBLE, token_buffer, line);
+    if (strcmp(token_buffer, "if") == 0) return create_token(TKN_IF, token_buffer, line);
+    if (strcmp(token_buffer, "else") == 0) return create_token(TKN_ELSE, token_buffer, line);
+    if (strcmp(token_buffer, "while") == 0) return create_token(TKN_WHILE, token_buffer, line);
+    if (strcmp(token_buffer, "for") == 0) return create_token(TKN_FOR, token_buffer, line);
+    if (strcmp(token_buffer, "return") == 0) return create_token(TKN_RETURN, token_buffer, line);
+
+    return create_token(TKN_ID, token_buffer, line);
 }
 
 long get_file_size(FILE* file){
@@ -536,7 +566,15 @@ int main(int argc, char* argv[]) {
             free(token);
             continue;
         }
+        if (isalpha(lexer->current_char) || lexer->current_char == '_') {
+            int line = lexer->line;
+            Token* token = lexer_identifier(lexer, line);            
+            printf("--- %s -> Lexeme: %s (line %d)\n", token_type_to_string(token->type), token->lexeme, token->line);
 
+            free(token->lexeme);
+            free(token);
+            continue;
+        }
         printf("Current char: '%c' (line %zu, column %zu)\n", lexer->current_char, lexer->line, lexer->column);
         lexer_advance(lexer);
     }
