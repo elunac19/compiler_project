@@ -55,6 +55,8 @@ typedef enum {
     TKN_LPAREN,
     TKN_RPAREN,
     TKN_LBRACE,
+    TKN_RBRACKET,
+    TKN_LBRACKET,
     TKN_RBRACE,
     TKN_SEMICOLON,
     TKN_COMMA,
@@ -95,6 +97,73 @@ typedef struct {
     char current_char;
 } Lexer;
 
+const char* token_type_to_string(TokenType type) {
+    switch (type) {
+        // DataType Keywords
+        case TKN_CHAR: return "TKN_CHAR";
+        case TKN_INT: return "TKN_INT";
+        case TKN_LONG: return "TKN_LONG";
+        case TKN_FLOAT: return "TKN_FLOAT";
+        case TKN_DOUBLE: return "TKN_DOUBLE";
+        case TKN_STRING: return "TKN_STRING";
+
+        // Flow Statement Keywords
+        case TKN_IF: return "TKN_IF";
+        case TKN_ELSE: return "TKN_ELSE";
+        case TKN_FOR: return "TKN_FOR";
+        case TKN_WHILE: return "TKN_WHILE";
+
+        // Exit Statement Keyword
+        case TKN_RETURN: return "TKN_RETURN";
+
+        // Identifiers and literals
+        case TKN_ID: return "TKN_ID";
+        case TKN_CHAR_LIT: return "TKN_CHAR_LIT";
+        case TKN_INT_LIT: return "TKN_INT_LIT";
+        case TKN_SHORT_LIT: return "TKN_SHORT_LIT";
+        case TKN_LONG_LIT: return "TKN_LONG_LIT";
+        case TKN_FLOAT_LIT: return "TKN_FLOAT_LIT";
+        case TKN_DOUBLE_LIT: return "TKN_DOUBLE_LIT";
+        case TKN_UNSIGNED_LIT: return "TKN_UNSIGNED_LIT";
+        case TKN_STRING_LIT: return "TKN_STRING_LIT";
+
+        // Arithmetic Operators
+        case TKN_PLUS: return "TKN_PLUS";
+        case TKN_MINUS: return "TKN_MINUS";
+        case TKN_MULTIPLY: return "TKN_MULTIPLY";
+        case TKN_DIVIDE: return "TKN_DIVIDE";
+        case TKN_MODULO: return "TKN_MODULO";
+        case TKN_ASSIGN: return "TKN_ASSIGN";
+        case TKN_EQ: return "TKN_EQ";
+        case TKN_NEQ: return "TKN_NEQ";
+        case TKN_LT: return "TKN_LT";
+        case TKN_GT: return "TKN_GT";
+        case TKN_LTE: return "TKN_LTE";
+        case TKN_GTE: return "TKN_GTE";
+
+        // Logical Operators
+        case TKN_AND: return "TKN_AND";
+        case TKN_OR: return "TKN_OR";
+        case TKN_NOT: return "TKN_NOT";
+
+        // Punctuation
+        case TKN_LPAREN: return "TKN_LPAREN";
+        case TKN_RPAREN: return "TKN_RPAREN";
+        case TKN_LBRACE: return "TKN_LBRACE";
+        case TKN_RBRACKET: return "TKN_RBRACKET";
+        case TKN_LBRACKET: return "TKN_LBRACKET";
+        case TKN_RBRACE: return "TKN_RBRACE";
+        case TKN_SEMICOLON: return "TKN_SEMICOLON";
+        case TKN_COMMA: return "TKN_COMMA";
+
+        // Other
+        case TKN_ERROR: return "TKN_ERROR";
+        case TKN_EOF: return "TKN_EOF";
+
+        default: return "UNKNOWN";
+    }
+}
+
 Lexer* init_lexer(char* buffer){
     Lexer* lexer = malloc(sizeof(Lexer));
     lexer->buffer = buffer;
@@ -112,6 +181,18 @@ Token* create_token(TokenType type, char* lexeme, int line){
     token->lexeme = strdup(lexeme);
     token->line = line;
     return token;
+}
+
+int issybol(char c){
+    switch (c) {
+        case '+': case '-': case '*': case '/': case '%':
+        case '=': case '<': case '>': case '!':
+        case '(': case ')': case '{': case '}': case ';': case ',': case '[': case ']':
+        case '&': case '|':
+            return 1;
+        default:
+            return 0;
+    }
 }
 
 void lexer_advance(Lexer* lexer){
@@ -165,13 +246,14 @@ void lexer_skip_comments(Lexer* lexer){
 }
 
 /*[NICE TO HAVE]
-    Escape sequences 
+    Escape sequences '\n', '\t'
     Unclosed string or char
+    Error handling
 */
 Token* lexer_char_or_string(Lexer* lexer, int line){
     if(lexer->current_char == '\''){
         lexer_advance(lexer);
-        char token_buffer[2] = {lexer->current_char, '\0'};
+        char token_buffer[] = {lexer->current_char, '\0'};
         lexer_advance(lexer);
         lexer_advance(lexer);
 
@@ -198,6 +280,154 @@ Token* lexer_char_or_string(Lexer* lexer, int line){
         return token;
     }
     return create_token(TKN_ERROR, "Error", line);
+}
+
+/*[NICE TO HAVE]
+    Unary operators: Recognize ++ and -- as separate tokens.
+    Compound operators: Support for +=, -=, *=, /=, %=, &=, |=, etc.
+    Better error reporting: Show clear messages like Unexpected symbol '#' at line 3.
+    Better handling for symbols that have a bitwise operator
+    Dot and arrow operators: Tokenize . and -> for future struct/member access support.
+    * (pointers)
+    & (pointers)
+    PERCHANCE, MAYHAPSS -> refactor repeated code
+*/
+Token* lexer_symbol(Lexer* lexer, int line){
+    switch (lexer->current_char) {
+        case '+': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_PLUS, token_buffer, line);
+        }
+        case '-': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_MINUS, token_buffer, line);
+        }
+        case '*': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_MULTIPLY, token_buffer, line);
+        }
+        case '/': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_DIVIDE, token_buffer, line);
+        }
+        case '%': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_MODULO, token_buffer, line);
+        }
+        case '=': {
+            if(lexer_peek(lexer) == '='){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_EQ, token_buffer, line);
+            }
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_ASSIGN, token_buffer, line);
+        }
+        case '!': {
+            if(lexer_peek(lexer) == '='){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_NEQ, token_buffer, line); 
+            }
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_NOT, token_buffer, line);
+        }
+        case '<': {
+            if(lexer_peek(lexer) == '='){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_LTE, token_buffer, line); 
+            }
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_LT, token_buffer, line);
+        }
+        case '>': {
+            if(lexer_peek(lexer) == '='){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_GTE, token_buffer, line); 
+            }
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_GT, token_buffer, line);
+        }
+        case '&': {
+            if(lexer_peek(lexer) == '&'){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_AND, token_buffer, line); 
+            }
+            lexer_advance(lexer);
+            return create_token(TKN_ERROR, (char[]){"Error symbol"}, line);
+        }
+        case '|': {
+            if(lexer_peek(lexer) == '|'){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_OR, token_buffer, line); 
+            }
+            lexer_advance(lexer);
+            return create_token(TKN_ERROR, (char[]){"Error symbol"}, line);
+        }
+        case '(': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_LPAREN, token_buffer, line);
+        }
+        case ')': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_RPAREN, token_buffer, line);
+        }
+        case '{': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_LBRACE, token_buffer, line);
+        }
+        case '}': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_RBRACE, token_buffer, line);
+        }
+        case '[': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_LBRACKET, token_buffer, line);
+        }
+        case ']': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_RBRACKET, token_buffer, line);
+        }
+        case ';': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_SEMICOLON, token_buffer, line);
+        }
+        case ',': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_COMMA, token_buffer, line);
+        }
+        default: {
+            lexer_advance(lexer);
+            return create_token(TKN_ERROR, (char[]){"Error symbol"}, line);
+        }
+    }
 }
 
 long get_file_size(FILE* file){
@@ -254,15 +484,17 @@ int main(int argc, char* argv[]) {
         if (lexer->current_char == '\'' || lexer->current_char == '"') {
             int line = lexer->line;
             Token* token = lexer_char_or_string(lexer, line);
-            if(token->type == TKN_CHAR_LIT){
-                printf("TKN_CHAR_LIT: %s - line %d\n", token->lexeme, token->line);
-            }
-        
-            if(token->type == TKN_STRING_LIT){
-                printf("TKN_STRING_LIT: %s - line %d\n", token->lexeme, token->line);
-
-            }
+            printf("--- %s -> Lexeme: %s (line %d)\n", token_type_to_string(token->type), token->lexeme, token->line);
             
+            free(token->lexeme);
+            free(token);
+            continue;
+        }
+        if (issybol(lexer->current_char)) {
+            int line = lexer->line;
+            Token* token = lexer_symbol(lexer, line);
+            printf("--- %s -> Lexeme: %s (line %d)\n", token_type_to_string(token->type), token->lexeme, token->line);
+
             free(token->lexeme);
             free(token);
             continue;
