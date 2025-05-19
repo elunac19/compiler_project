@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 typedef enum {
     //DataType Keywords
     TKN_CHAR,       
-    TKN_INT,        
-    TKN_SHORT,      
+    TKN_INT,      
     TKN_LONG,       
     TKN_FLOAT,
     TKN_DOUBLE,
-    TKN_UNSIGNED,
+    TKN_STRING,
 
     //Flow Statement Keywords
     TKN_IF,
@@ -69,6 +69,15 @@ typedef struct {
     TokenType type;
     char* lexeme; 
     int line;
+    
+    union {
+        char char_value;
+        int int_value;
+        long long_value;
+        float float_value;
+        double double_value;
+        char *string_value;
+    } value;
 } Token;
 
 typedef struct {
@@ -101,7 +110,7 @@ Token* create_token(TokenType type, char* lexeme, int line){
     Token* token = malloc(sizeof(Token));
     token->type = type;
     token->lexeme = strdup(lexeme);
-    token->line;
+    token->line = line;
     return token;
 }
 
@@ -155,6 +164,41 @@ void lexer_skip_comments(Lexer* lexer){
     }
 }
 
+/*[NICE TO HAVE]
+    Escape sequences 
+    Unclosed string or char
+*/
+void lexer_char_or_string(Lexer* lexer, int line){
+    if(lexer->current_char == '\''){
+        lexer_advance(lexer);
+        char token_buffer[2] = {lexer->current_char, '\0'};
+        lexer_advance(lexer);
+        lexer_advance(lexer);
+        printf("Token char: %c\n", token_buffer[0]);
+
+        Token* token = create_token(TKN_CHAR_LIT, token_buffer, line);
+        token->value.char_value = token_buffer[0];
+    }
+    
+    if(lexer->current_char == '"'){
+        char token_buffer[256]; 
+        int token_position = 0;
+        lexer_advance(lexer);
+
+        while(lexer->current_char != '"' && lexer->current_char != '\0'){
+            token_buffer[token_position++] = lexer->current_char;
+            lexer_advance(lexer);
+        }
+
+        lexer_advance(lexer);
+        token_buffer[token_position] = '\0';
+        printf("Token string: %s\n", token_buffer);
+
+        Token* token = create_token(TKN_STRING_LIT, token_buffer, line);
+        token->value.string_value = token->lexeme;
+    }
+}
+
 long get_file_size(FILE* file){
     fseek(file, 0, SEEK_END);
     long size = ftell(file);
@@ -193,10 +237,8 @@ int main(int argc, char* argv[]) {
     char* buffer = malloc(file_size + 1);
     fread(buffer, sizeof(char), file_size, file);
     buffer[file_size] = '\0';
-
     fclose(file);
 
-    
     Lexer* lexer = init_lexer(buffer);
     
     while(lexer->current_char != '\0'){
@@ -204,16 +246,21 @@ int main(int argc, char* argv[]) {
             lexer_skip_whitespace(lexer);
             continue;
         }
-        if(lexer->current_char == '/' && lexer_peek(lexer) == '/' || lexer_peek(lexer) == '*'){
+        if (lexer->current_char == '/' && (lexer_peek(lexer) == '/' || lexer_peek(lexer) == '*')) {
             lexer_skip_comments(lexer);
             continue;
         }
+        if (lexer->current_char == '\'' || lexer->current_char == '"') {
+            int line = lexer->line;
+            lexer_char_or_string(lexer, line);
+            continue;
+        }
+
         printf("Current char: '%c' (line %zu, column %zu)\n", lexer->current_char, lexer->line, lexer->column);
         lexer_advance(lexer);
     }
     
     free(buffer);
     free(lexer);
-
     return 0;
 }
