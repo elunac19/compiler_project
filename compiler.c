@@ -12,12 +12,34 @@ typedef enum {
     TKN_FLOAT,
     TKN_DOUBLE,
     TKN_STRING,
+    TKN_VOID,
 
     //Flow Statement Keywords
     TKN_IF,
     TKN_ELSE,
     TKN_FOR,
     TKN_WHILE,
+
+    //OOP Keywords
+    TKN_CLASS,    
+    TKN_PUBLIC,   
+    TKN_PRIVATE,  
+    TKN_PROTECTED,
+    TKN_THIS,     
+    TKN_NEW,      
+    TKN_DELETE,   
+    TKN_VIRTUAL,  
+    TKN_OVERRIDE, 
+    TKN_STATIC,   
+
+    TKN_COLON,
+    TKN_SCOPE,
+    TKN_DOT,   
+    TKN_ARROW, 
+    
+    //Libraries
+    TKN_HASH,          
+    TKN_INCLUDE,
 
     //Exit Statement Keyword
     TKN_RETURN,
@@ -32,8 +54,8 @@ typedef enum {
     //Arithmetic Operators
     TKN_PLUS,
     TKN_MINUS,
-    TKN_MULTIPLY,
-    TKN_DIVIDE,
+    TKN_STAR,
+    TKN_SLASH,
     TKN_MODULO,
     TKN_ASSIGN,
     TKN_EQ,
@@ -43,10 +65,24 @@ typedef enum {
     TKN_LTE,
     TKN_GTE,
 
+    //Unary Operators
+    TKN_INCREMENT,
+    TKN_DECREMENT,
+
+    //Compound Operators
+    TKN_PLUS_EQUAL,       
+    TKN_MINUS_EQUAL,      
+    TKN_STAR_EQUAL,       
+    TKN_SLASH_EQUAL,      
+    TKN_MODULO_EQUAL,
+
     //Logical Operators
     TKN_AND,
     TKN_OR,
     TKN_NOT,
+
+    // ~
+    TKN_TILDE,
 
     //Punctuation
     TKN_LPAREN,
@@ -61,6 +97,8 @@ typedef enum {
     //Other
     TKN_ERROR,
     TKN_EOF
+
+
 
 } TokenType;
 
@@ -106,12 +144,32 @@ const char* token_type_to_string(TokenType type) {
         case TKN_FLOAT: return "TKN_FLOAT";
         case TKN_DOUBLE: return "TKN_DOUBLE";
         case TKN_STRING: return "TKN_STRING";
+        case TKN_VOID: return "TKN_VOID";
 
         // Flow Statement Keywords
         case TKN_IF: return "TKN_IF";
         case TKN_ELSE: return "TKN_ELSE";
         case TKN_FOR: return "TKN_FOR";
         case TKN_WHILE: return "TKN_WHILE";
+
+            //OOP Keywords
+        case TKN_CLASS: return "TKN_CLASS";
+        case TKN_PUBLIC: return "TKN_PUBLIC";  
+        case TKN_PROTECTED: return "TKN_PROTECTED";    
+        case TKN_THIS: return "TKN_THIS"; 
+        case TKN_NEW: return "TKN_NEW";     
+        case TKN_DELETE: return "TKN_DELETE"; 
+        case TKN_VIRTUAL: return "TKN_VIRTUAL";
+        case TKN_OVERRIDE: return "TKN_OVERRIDE";
+        case TKN_STATIC: return "TKN_STATIC";
+        case TKN_COLON: return "TKN_COLON";
+        case TKN_SCOPE: return "TKN_SCOPE";
+        case TKN_DOT: return "TKN_DOT";
+        case TKN_ARROW: return "TKN_ARROW";
+
+        //Preprocesor
+        case TKN_HASH: return "TKN_HASH";
+        case TKN_INCLUDE: return "TKN_INCLUDE";
 
         // Exit Statement Keyword
         case TKN_RETURN: return "TKN_RETURN";
@@ -126,8 +184,8 @@ const char* token_type_to_string(TokenType type) {
         // Arithmetic Operators
         case TKN_PLUS: return "TKN_PLUS";
         case TKN_MINUS: return "TKN_MINUS";
-        case TKN_MULTIPLY: return "TKN_MULTIPLY";
-        case TKN_DIVIDE: return "TKN_DIVIDE";
+        case TKN_STAR: return "TKN_STAR";
+        case TKN_SLASH: return "TKN_SLASH";
         case TKN_MODULO: return "TKN_MODULO";
         case TKN_ASSIGN: return "TKN_ASSIGN";
         case TKN_EQ: return "TKN_EQ";
@@ -136,11 +194,25 @@ const char* token_type_to_string(TokenType type) {
         case TKN_GT: return "TKN_GT";
         case TKN_LTE: return "TKN_LTE";
         case TKN_GTE: return "TKN_GTE";
+        
+        //Unary Operators
+        case TKN_INCREMENT: return "TKN_INCREMENT";
+        case TKN_DECREMENT: return "TKN_DECREMENT";
 
+        //Compound Operators
+        case TKN_PLUS_EQUAL: return "TKN_PLUS_EQUAL";      
+        case TKN_MINUS_EQUAL: return "TKN_MINUS_EQUAL";      
+        case TKN_STAR_EQUAL: return "TKN_STAR_EQUAL";       
+        case TKN_SLASH_EQUAL: return "TKN_SLASH_EQUAL";      
+        case TKN_MODULO_EQUAL: return "TKN_MODULO_EQUAL";
+        
         // Logical Operators
         case TKN_AND: return "TKN_AND";
         case TKN_OR: return "TKN_OR";
         case TKN_NOT: return "TKN_NOT";
+
+        // ~
+        case TKN_TILDE: return "TKN_TILDE"; 
 
         // Punctuation
         case TKN_LPAREN: return "TKN_LPAREN";
@@ -185,6 +257,7 @@ int issybol(char c) {
         case '=': case '<': case '>': case '!':
         case '(': case ')': case '{': case '}': case ';': case ',': case '[': case ']':
         case '&': case '|':
+        case ':': case '#': case '.':
             return 1;
         default:
             return 0;
@@ -279,38 +352,79 @@ Token* lexer_char_or_string(Lexer* lexer, int line) {
 }
 
 /*[NICE TO HAVE]
-    Unary operators: Recognize ++ and -- as separate tokens.
-    Compound operators: Support for +=, -=, *=, /=, %=, &=, |=, etc.
-    Better error reporting: Show clear messages like Unexpected symbol '#' at line 3.
-    Better handling for symbols that have a bitwise operator
-    Dot and arrow operators: Tokenize . and -> for future struct/member access support.
-    * (pointers)
-    & (pointers)
     PERCHANCE, MAYHAPSS -> refactor repeated code
 */
 Token* lexer_symbol(Lexer* lexer, int line) {
     switch (lexer->current_char) {
         case '+': {
+            if(lexer_peek(lexer) == '='){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_MINUS_EQUAL, token_buffer, line);
+            }
+            if(lexer_peek(lexer) == '+'){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_INCREMENT, token_buffer, line);
+            }
             char token_buffer[] = {lexer->current_char, '\0'};
             lexer_advance(lexer);
             return create_token(TKN_PLUS, token_buffer, line);
         }
         case '-': {
+            if(lexer_peek(lexer) == '='){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_MINUS_EQUAL, token_buffer, line);
+            }
+            if(lexer_peek(lexer) == '-'){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_DECREMENT, token_buffer, line);
+            }
+            if(lexer_peek(lexer) == '>'){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_ARROW, token_buffer, line);
+            }
             char token_buffer[] = {lexer->current_char, '\0'};
             lexer_advance(lexer);
             return create_token(TKN_MINUS, token_buffer, line);
         }
         case '*': {
+            if(lexer_peek(lexer) == '='){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_STAR_EQUAL, token_buffer, line);
+            }
             char token_buffer[] = {lexer->current_char, '\0'};
             lexer_advance(lexer);
-            return create_token(TKN_MULTIPLY, token_buffer, line);
+            return create_token(TKN_STAR, token_buffer, line);
         }
         case '/': {
+            if(lexer_peek(lexer) == '='){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_SLASH_EQUAL, token_buffer, line);
+            }
             char token_buffer[] = {lexer->current_char, '\0'};
             lexer_advance(lexer);
-            return create_token(TKN_DIVIDE, token_buffer, line);
+            return create_token(TKN_SLASH, token_buffer, line);
         }
         case '%': {
+            if(lexer_peek(lexer) == '='){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_MODULO_EQUAL, token_buffer, line);
+            }
             char token_buffer[] = {lexer->current_char, '\0'};
             lexer_advance(lexer);
             return create_token(TKN_MODULO, token_buffer, line);
@@ -419,6 +533,27 @@ Token* lexer_symbol(Lexer* lexer, int line) {
             lexer_advance(lexer);
             return create_token(TKN_COMMA, token_buffer, line);
         }
+        case '#': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_HASH, token_buffer, line);
+        }
+        case ':': {
+            if(lexer_peek(lexer) == ':'){
+                char token_buffer[] = {lexer->current_char, lexer_peek(lexer),'\0'};
+                lexer_advance(lexer);
+                lexer_advance(lexer);
+                return create_token(TKN_SCOPE, token_buffer, line);
+            }
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_COLON, token_buffer, line);
+        }
+        case '.': {
+            char token_buffer[] = {lexer->current_char, '\0'};
+            lexer_advance(lexer);
+            return create_token(TKN_DOT, token_buffer, line);
+        }
         default: {
             lexer_advance(lexer);
             return create_token(TKN_ERROR, (char[]){"Error symbol"}, line);
@@ -479,10 +614,23 @@ Token* lexer_identifier(Lexer* lexer, int line) {
     if (strcmp(token_buffer, "long") == 0) return create_token(TKN_LONG, token_buffer, line);
     if (strcmp(token_buffer, "float") == 0) return create_token(TKN_FLOAT, token_buffer, line);
     if (strcmp(token_buffer, "double") == 0) return create_token(TKN_DOUBLE, token_buffer, line);
+    if (strcmp(token_buffer, "string") == 0) return create_token(TKN_STRING, token_buffer, line);
+    if (strcmp(token_buffer, "void") == 0) return create_token(TKN_VOID, token_buffer, line);
     if (strcmp(token_buffer, "if") == 0) return create_token(TKN_IF, token_buffer, line);
     if (strcmp(token_buffer, "else") == 0) return create_token(TKN_ELSE, token_buffer, line);
-    if (strcmp(token_buffer, "while") == 0) return create_token(TKN_WHILE, token_buffer, line);
     if (strcmp(token_buffer, "for") == 0) return create_token(TKN_FOR, token_buffer, line);
+    if (strcmp(token_buffer, "while") == 0) return create_token(TKN_WHILE, token_buffer, line);
+    if (strcmp(token_buffer, "class") == 0) return create_token(TKN_CLASS, token_buffer, line);
+    if (strcmp(token_buffer, "public") == 0) return create_token(TKN_PUBLIC, token_buffer, line);
+    if (strcmp(token_buffer, "private") == 0) return create_token(TKN_PRIVATE, token_buffer, line);
+    if (strcmp(token_buffer, "protected") == 0) return create_token(TKN_PROTECTED, token_buffer, line);
+    if (strcmp(token_buffer, "this") == 0) return create_token(TKN_THIS, token_buffer, line);
+    if (strcmp(token_buffer, "new") == 0) return create_token(TKN_NEW, token_buffer, line);
+    if (strcmp(token_buffer, "delete") == 0) return create_token(TKN_DELETE, token_buffer, line);
+    if (strcmp(token_buffer, "virtual") == 0) return create_token(TKN_VIRTUAL, token_buffer, line);
+    if (strcmp(token_buffer, "override") == 0) return create_token(TKN_OVERRIDE, token_buffer, line);
+    if (strcmp(token_buffer, "static") == 0) return create_token(TKN_STATIC, token_buffer, line);
+    if (strcmp(token_buffer, "include") == 0) return create_token(TKN_INCLUDE, token_buffer,line);
     if (strcmp(token_buffer, "return") == 0) return create_token(TKN_RETURN, token_buffer, line);
 
     return create_token(TKN_ID, token_buffer, line);

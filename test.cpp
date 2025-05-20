@@ -1,7 +1,14 @@
+#include <stdio.h>
+
+// Función anidada (simulada)
+int suma(int x, int y) {
+    return x + y;
+}
+
 int main() {
     int a = 5;
     float b = 3.14;
-    char c = 'x';
+    char c = 'xdas';
     char* msg = "Hola mundo";
 
     // Variables nuevas
@@ -26,11 +33,6 @@ int main() {
     // For loop
     for (int i = 0; i < 10; i++) {
         arreglo[i % 3] = i;
-    }
-
-    // Función anidada (simulada)
-    int suma(int x, int y) {
-        return x + y;
     }
 
     int resultado = suma(3, 4);
