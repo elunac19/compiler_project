@@ -102,7 +102,7 @@ typedef enum {
 
 } TokenType;
 
-/*[NICE TO HAVE]
+/*[PERCHANCE]
     ValueType 
 */
 typedef struct {
@@ -314,14 +314,36 @@ void lexer_skip_comments(Lexer* lexer) {
     }
 }
 
-/*[NICE TO HAVE]
+/*[PERCHANCE]
     Escape sequences '\n', '\t'
-    Unclosed string or char
-    Error handling
 */
 Token* lexer_char_or_string(Lexer* lexer, int line) {
     if(lexer->current_char == '\''){
         lexer_advance(lexer);
+
+        // char c = '';
+        if(lexer->current_char == '\''){
+            lexer_advance(lexer);
+            return create_token(TKN_ERROR, "Char literal empty", line);
+        }
+
+        // char y = '
+        if(lexer->current_char == '\n' || lexer->current_char == '\0'){
+            return create_token(TKN_ERROR, "Char literal unclosed", line);
+        }
+        
+        // char x = 'sdaxzx'; || char v = 'aio
+        if(lexer_peek(lexer) != '\''){
+            while(lexer->current_char != '\'' && lexer->current_char != '\n' && lexer->current_char != '\0'){
+                lexer_advance(lexer);
+            }
+            if(lexer->current_char == '\''){
+                lexer_advance(lexer);
+                return create_token(TKN_ERROR, "Char literal too long", line);
+            }
+            return create_token(TKN_ERROR, "Char literal unclosed", line);
+        }
+
         char token_buffer[] = {lexer->current_char, '\0'};
         lexer_advance(lexer);
         lexer_advance(lexer);
@@ -331,24 +353,31 @@ Token* lexer_char_or_string(Lexer* lexer, int line) {
         return token;
     }
 
-    if(lexer->current_char == '"'){
-        char token_buffer[256]; 
-        int token_position = 0;
+    lexer_advance(lexer);
+
+    // char* x = " || string x = "
+    if(lexer->current_char == '\n' || lexer->current_char == '\0'){
+        return create_token(TKN_ERROR, "String literal unclosed", line);
+    }
+
+    char token_buffer[256]; 
+    int token_position = 0;
+
+    while(lexer->current_char != '"' && lexer->current_char != '\0' && lexer->current_char != '\n' && token_position < 255){
+        token_buffer[token_position++] = lexer->current_char;
         lexer_advance(lexer);
+    }
 
-        while(lexer->current_char != '"' && lexer->current_char != '\0' && token_position < 255){
-            token_buffer[token_position++] = lexer->current_char;
-            lexer_advance(lexer);
-        }
-
+    if(lexer->current_char == '"'){
         lexer_advance(lexer);
         token_buffer[token_position] = '\0';
-
+    
         Token* token = create_token(TKN_STRING_LIT, token_buffer, line);
         token->value.string_value = token->lexeme;
         return token;
     }
-    return create_token(TKN_ERROR, "Error", line);
+    
+    return create_token(TKN_ERROR, "String literal unclosed", line);
 }
 
 /*[NICE TO HAVE]
@@ -561,9 +590,8 @@ Token* lexer_symbol(Lexer* lexer, int line) {
     }
 }
 
-/*[NICE TO HAVE]
+/*[PERCHANCE]
    Better handling for longs and float: 456L, 0xF, 2.7f
-   Better error handling and reporting: 3. invalid
 */
 Token* lexer_number(Lexer* lexer, int line) {
     char token_buffer[256];
@@ -575,7 +603,7 @@ Token* lexer_number(Lexer* lexer, int line) {
         lexer_advance(lexer);
     }
 
-    if(lexer->current_char == '.' && isdigit(lexer_peek(lexer))) {
+    if(lexer->current_char == '.') {
         is_float = 1;
         token_buffer[token_position++] = lexer->current_char;
         lexer_advance(lexer);
@@ -583,6 +611,11 @@ Token* lexer_number(Lexer* lexer, int line) {
         while (isdigit(lexer->current_char) && token_position < 255) {
             token_buffer[token_position++] = lexer->current_char;
             lexer_advance(lexer);
+        }
+
+        if (lexer->current_char == '.'){
+            lexer_advance(lexer);
+            return create_token(TKN_ERROR, "Multiple decimal points", line);
         }
     }
 
