@@ -8,7 +8,7 @@ int suma(int x, int y) {
 int main() {
     int a = 5;
     float b = 3.14;
-    char c = 'xdas';
+    char c = 'x';
     char* msg = "Hola mundo";
 
     // Variables nuevas

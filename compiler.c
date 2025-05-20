@@ -35,7 +35,8 @@ typedef enum {
     TKN_COLON,
     TKN_SCOPE,
     TKN_DOT,   
-    TKN_ARROW, 
+    TKN_ARROW,
+    TKN_AMPERSAND,
     
     //Libraries
     TKN_HASH,          
@@ -251,19 +252,6 @@ Token* create_token(TokenType type, char* lexeme, int line) {
     return token;
 }
 
-int issybol(char c) {
-    switch (c) {
-        case '+': case '-': case '*': case '/': case '%':
-        case '=': case '<': case '>': case '!':
-        case '(': case ')': case '{': case '}': case ';': case ',': case '[': case ']':
-        case '&': case '|':
-        case ':': case '#': case '.':
-            return 1;
-        default:
-            return 0;
-    }
-}
-
 void lexer_advance(Lexer* lexer) {
     if(lexer->position < lexer->buffer_len){
         lexer->position++;
@@ -312,6 +300,19 @@ void lexer_skip_comments(Lexer* lexer) {
         lexer_advance(lexer);
         lexer_advance(lexer);
     }
+}
+
+Token* lexer_single_char_token(Lexer* lexer, TokenType type) {
+    char token_buffer[] = {lexer->current_char, '\0'};
+    lexer_advance(lexer);
+    return create_token(type, token_buffer, lexer->line);
+}
+
+Token* lexer_two_char_token(Lexer* lexer, TokenType type) {
+    char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
+    lexer_advance(lexer);
+    lexer_advance(lexer);
+    return create_token(type, token_buffer, lexer->line);
 }
 
 /*[PERCHANCE]
@@ -378,216 +379,6 @@ Token* lexer_char_or_string(Lexer* lexer, int line) {
     }
     
     return create_token(TKN_ERROR, "String literal unclosed", line);
-}
-
-/*[NICE TO HAVE]
-    PERCHANCE, MAYHAPSS -> refactor repeated code
-*/
-Token* lexer_symbol(Lexer* lexer, int line) {
-    switch (lexer->current_char) {
-        case '+': {
-            if(lexer_peek(lexer) == '='){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_MINUS_EQUAL, token_buffer, line);
-            }
-            if(lexer_peek(lexer) == '+'){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_INCREMENT, token_buffer, line);
-            }
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_PLUS, token_buffer, line);
-        }
-        case '-': {
-            if(lexer_peek(lexer) == '='){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_MINUS_EQUAL, token_buffer, line);
-            }
-            if(lexer_peek(lexer) == '-'){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_DECREMENT, token_buffer, line);
-            }
-            if(lexer_peek(lexer) == '>'){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_ARROW, token_buffer, line);
-            }
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_MINUS, token_buffer, line);
-        }
-        case '*': {
-            if(lexer_peek(lexer) == '='){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_STAR_EQUAL, token_buffer, line);
-            }
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_STAR, token_buffer, line);
-        }
-        case '/': {
-            if(lexer_peek(lexer) == '='){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_SLASH_EQUAL, token_buffer, line);
-            }
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_SLASH, token_buffer, line);
-        }
-        case '%': {
-            if(lexer_peek(lexer) == '='){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_MODULO_EQUAL, token_buffer, line);
-            }
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_MODULO, token_buffer, line);
-        }
-        case '=': {
-            if(lexer_peek(lexer) == '='){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_EQ, token_buffer, line);
-            }
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_ASSIGN, token_buffer, line);
-        }
-        case '!': {
-            if(lexer_peek(lexer) == '='){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_NEQ, token_buffer, line); 
-            }
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_NOT, token_buffer, line);
-        }
-        case '<': {
-            if(lexer_peek(lexer) == '='){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_LTE, token_buffer, line); 
-            }
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_LT, token_buffer, line);
-        }
-        case '>': {
-            if(lexer_peek(lexer) == '='){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_GTE, token_buffer, line); 
-            }
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_GT, token_buffer, line);
-        }
-        case '&': {
-            if(lexer_peek(lexer) == '&'){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_AND, token_buffer, line); 
-            }
-            lexer_advance(lexer);
-            return create_token(TKN_ERROR, (char[]){"Error symbol"}, line);
-        }
-        case '|': {
-            if(lexer_peek(lexer) == '|'){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_OR, token_buffer, line); 
-            }
-            lexer_advance(lexer);
-            return create_token(TKN_ERROR, (char[]){"Error symbol"}, line);
-        }
-        case '(': {
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_LPAREN, token_buffer, line);
-        }
-        case ')': {
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_RPAREN, token_buffer, line);
-        }
-        case '{': {
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_LBRACE, token_buffer, line);
-        }
-        case '}': {
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_RBRACE, token_buffer, line);
-        }
-        case '[': {
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_LBRACKET, token_buffer, line);
-        }
-        case ']': {
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_RBRACKET, token_buffer, line);
-        }
-        case ';': {
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_SEMICOLON, token_buffer, line);
-        }
-        case ',': {
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_COMMA, token_buffer, line);
-        }
-        case '#': {
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_HASH, token_buffer, line);
-        }
-        case ':': {
-            if(lexer_peek(lexer) == ':'){
-                char token_buffer[] = {lexer->current_char, lexer_peek(lexer),'\0'};
-                lexer_advance(lexer);
-                lexer_advance(lexer);
-                return create_token(TKN_SCOPE, token_buffer, line);
-            }
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_COLON, token_buffer, line);
-        }
-        case '.': {
-            char token_buffer[] = {lexer->current_char, '\0'};
-            lexer_advance(lexer);
-            return create_token(TKN_DOT, token_buffer, line);
-        }
-        default: {
-            lexer_advance(lexer);
-            return create_token(TKN_ERROR, (char[]){"Error symbol"}, line);
-        }
-    }
 }
 
 /*[PERCHANCE]
@@ -669,6 +460,123 @@ Token* lexer_identifier(Lexer* lexer, int line) {
     return create_token(TKN_ID, token_buffer, line);
 }
 
+Token* lexer_get_next_token(Lexer* lexer) {
+    while(lexer->current_char != '\0'){
+        if (lexer->current_char == ' ' || lexer->current_char == '\n') {
+            lexer_skip_whitespace(lexer);
+            continue;
+        }
+
+        if (lexer->current_char == '/' && (lexer_peek(lexer) == '/' || lexer_peek(lexer) == '*')) {
+            lexer_skip_comments(lexer);
+            continue;
+        }
+        
+        int line = lexer->line;
+        
+        if (lexer->current_char == '\'' || lexer->current_char == '"') {
+            return lexer_char_or_string(lexer, line);
+        }
+
+        if (isdigit(lexer->current_char) || (lexer->current_char == '.' && isdigit(lexer_peek(lexer)))) {
+            return lexer_number(lexer, line);
+        }
+
+        if (isalpha(lexer->current_char) || lexer->current_char == '_') {
+            return lexer_identifier(lexer, line);            
+        }
+
+        switch (lexer->current_char) {
+            case '+': {
+                if(lexer_peek(lexer) == '=') return lexer_two_char_token(lexer, TKN_PLUS_EQUAL);
+                if(lexer_peek(lexer) == '+') return lexer_two_char_token(lexer, TKN_INCREMENT);
+                return lexer_single_char_token(lexer, TKN_PLUS);
+            }
+            case '-': {
+                if(lexer_peek(lexer) == '=') return lexer_two_char_token(lexer, TKN_MINUS_EQUAL);
+                if(lexer_peek(lexer) == '-') return lexer_two_char_token(lexer, TKN_DECREMENT);
+                if(lexer_peek(lexer) == '>') return lexer_two_char_token(lexer, TKN_ARROW);
+                return lexer_single_char_token(lexer, TKN_MINUS);
+            }
+            case '*': {
+                if(lexer_peek(lexer) == '=') return lexer_two_char_token(lexer, TKN_STAR_EQUAL);
+                return lexer_single_char_token(lexer, TKN_STAR);
+            }
+            case '/': {
+                if(lexer_peek(lexer) == '=') return lexer_two_char_token(lexer, TKN_SLASH_EQUAL);
+                return lexer_single_char_token(lexer, TKN_SLASH);
+            }
+            case '%': {
+                if(lexer_peek(lexer) == '=') return lexer_two_char_token(lexer, TKN_MODULO_EQUAL);
+                return lexer_single_char_token(lexer, TKN_MODULO);
+            }
+            case '=': {
+                if(lexer_peek(lexer) == '=') return lexer_two_char_token(lexer, TKN_EQ);
+                return lexer_single_char_token(lexer, TKN_ASSIGN);
+            }
+            case '!': {
+                if(lexer_peek(lexer) == '=') return lexer_two_char_token(lexer, TKN_NEQ); 
+                return lexer_single_char_token(lexer, TKN_NOT);
+            }
+            case '<': {
+                if(lexer_peek(lexer) == '=') return lexer_two_char_token(lexer, TKN_LTE); 
+                return lexer_single_char_token(lexer, TKN_LT);
+            }
+            case '>': {
+                if(lexer_peek(lexer) == '=') return lexer_two_char_token(lexer, TKN_GTE); 
+                return lexer_single_char_token(lexer, TKN_GT);
+            }
+            case '&': {
+                if(lexer_peek(lexer) == '&') return lexer_two_char_token(lexer, TKN_AND); 
+                return lexer_single_char_token(lexer, TKN_AMPERSAND);
+            }
+            case '|': {
+                if(lexer_peek(lexer) == '|') return lexer_two_char_token(lexer, TKN_OR); 
+                return lexer_single_char_token(lexer, TKN_ERROR);
+            }
+            case '(': {
+                return lexer_single_char_token(lexer, TKN_LPAREN);
+            }
+            case ')': {
+                return lexer_single_char_token(lexer, TKN_RPAREN);
+            }
+            case '{': {
+                return lexer_single_char_token(lexer, TKN_LBRACE);
+            }
+            case '}': {
+                return lexer_single_char_token(lexer, TKN_RBRACE);
+            }
+            case '[': {
+                return lexer_single_char_token(lexer, TKN_LBRACKET);
+            }
+            case ']': {
+                return lexer_single_char_token(lexer, TKN_RBRACKET);
+            }
+            case ';': {
+                return lexer_single_char_token(lexer, TKN_SEMICOLON);
+            }
+            case ',': {
+                return lexer_single_char_token(lexer, TKN_COMMA);
+            }
+            case '#': {
+                return lexer_single_char_token(lexer, TKN_HASH);
+            }
+            case ':': {
+                if(lexer_peek(lexer) == ':') return lexer_two_char_token(lexer, TKN_SCOPE);
+                return lexer_single_char_token(lexer, TKN_COLON);
+            }
+            case '.': {
+                return lexer_single_char_token(lexer, TKN_DOT);
+            }
+            default: {
+                lexer_advance(lexer);
+                return lexer_single_char_token(lexer, TKN_ERROR);
+            }
+        }
+    }
+    return create_token(TKN_EOF, "", lexer->line);
+}
+
 long get_file_size(FILE* file){
     fseek(file, 0, SEEK_END);
     long size = ftell(file);
@@ -692,7 +600,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    FILE* file = fopen(argv[1], "r+");
+    FILE* file = fopen(argv[1], "r");
     if (!file) {
         printf("Error: cannot open file %s\n", argv[1]);
         return 1;
@@ -710,57 +618,20 @@ int main(int argc, char* argv[]) {
     fclose(file);
 
     Lexer* lexer = init_lexer(buffer);
-    
-    while(lexer->current_char != '\0'){
-        if (lexer->current_char == ' ' || lexer->current_char == '\n') {
-            lexer_skip_whitespace(lexer);
-            continue;
-        }
-        if (lexer->current_char == '/' && (lexer_peek(lexer) == '/' || lexer_peek(lexer) == '*')) {
-            lexer_skip_comments(lexer);
-            continue;
-        }
-        if (lexer->current_char == '\'' || lexer->current_char == '"') {
-            int line = lexer->line;
-            Token* token = lexer_char_or_string(lexer, line);
-            printf("--- %s -> Lexeme: %s (line %d)\n", token_type_to_string(token->type), token->lexeme, token->line);
-            
-            free(token->lexeme);
-            free(token);
-            continue;
-        }
-        if (issybol(lexer->current_char)) {
-            int line = lexer->line;
-            Token* token = lexer_symbol(lexer, line);
-            printf("--- %s -> Lexeme: %s (line %d)\n", token_type_to_string(token->type), token->lexeme, token->line);
 
-            free(token->lexeme);
-            free(token);
-            continue;
-        }
-        if (isdigit(lexer->current_char) || (lexer->current_char == '.' && isdigit(lexer_peek(lexer)))) {
-            int line = lexer->line;
-            Token* token = lexer_number(lexer, line);
-            printf("--- %s -> Lexeme: %s (line %d)\n", token_type_to_string(token->type), token->lexeme, token->line);
-            
-            free(token->lexeme);
-            free(token);
-            continue;
-        }
-        if (isalpha(lexer->current_char) || lexer->current_char == '_') {
-            int line = lexer->line;
-            Token* token = lexer_identifier(lexer, line);            
-            printf("--- %s -> Lexeme: %s (line %d)\n", token_type_to_string(token->type), token->lexeme, token->line);
-
-            free(token->lexeme);
-            free(token);
-            continue;
-        }
-        printf("Current char: '%c' (line %zu, column %zu)\n", lexer->current_char, lexer->line, lexer->column);
-        lexer_advance(lexer);
-    }
+    Token* token;
+    TokenType type;
+    do {
+        token = lexer_get_next_token(lexer);
+        printf("Token: %-20s Lexeme: %-24s Line: %d\n", token_type_to_string(token->type), token->lexeme, token->line);
+        
+        type = token->type;
+        free(token->lexeme);
+        free(token);
+    } while (type != TKN_EOF);
     
     free(buffer);
     free(lexer);
+
     return 0;
 }
