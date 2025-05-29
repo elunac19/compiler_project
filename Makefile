@@ -1,15 +1,18 @@
-test:
+.PHONY: clean test oop pp
+
+clean: 
+	rm -f ./build/oop
+	rm -f ./build/oop2
 	rm -f ./build/test
+
+test:
 	gcc compiler.c -o build/test
-	./build/test test.cpp
+	./build/test ./test/test.cpp
 
 oop:
-	rm -f ./build/oop
 	gcc compiler.c -o build/oop
-	./build/oop oop.cpp
+	./build/oop ./test/oop.cpp
 
-oop2:
-	rm -f ./build/oop2
+pp:
 	gcc compiler.c -o build/oop2
-	./build/oop2 oop2.cpp
-	
+	./build/oop2 ./test/pp.cpp
