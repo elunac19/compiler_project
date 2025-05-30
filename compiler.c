@@ -48,9 +48,32 @@ typedef enum {
     TKN_EOF
 } TokenType;
 
-/*[PERCHANCE]
-    ValueType 
-*/
+typedef enum {
+    NT_PRIME,
+    NT_A, // program
+    NT_C, // Declaration list  
+    NT_B, // Declaration
+    NT_D, // Class declaration
+    NT_E, // Type with modifiers
+    NT_F, // Function or variable end
+    NT_G, // Parameter list
+    NT_J, // Inheritance part
+    NT_K, // Base class list
+    NT_L, // Base class item
+    NT_M, // Access modifier
+    NT_N, // Non-empty parameter list
+    NT_O, // Type specifier
+    NT_P, // Pointer/reference modifier
+    NUM_NON_TERMINALS
+} NonTerminal;
+
+typedef enum {
+    ACTION_SHIFT,
+    ACTION_REDUCE,
+    ACTION_ACCEPT,
+    ACTION_ERROR
+} ActionType;
+
 typedef struct {
     TokenType type;
     char* lexeme; 
@@ -80,6 +103,147 @@ typedef struct {
     // Current character being processed
     char current_char;
 } Lexer;
+
+typedef struct {
+    NonTerminal left;           
+    int right[10];       
+    int right_count;           
+    int rule_num;              
+} GrammarRule;
+
+typedef struct {
+    ActionType type;
+    int state_or_rule;  
+} ParserAction;
+
+typedef struct {
+    int next_state;
+} GotoEntry;
+
+typedef struct {
+    int state;
+    int symbol;  
+    Token* token; 
+} StackItem;
+
+typedef struct {
+    Lexer* lexer;
+    Token* current_token;
+    StackItem* stack;
+    int stack_top;
+    int stack_capacity;
+    ParserAction action_table[100][100];  
+    GotoEntry goto_table[100][50];        
+    GrammarRule* grammar;
+    int num_rules;
+} Parser;
+
+GrammarRule grammar_rules[] = {
+    // Empece mi tabla en el 1 y no quiero cambiar todo XD
+    {0, {}, 0, 0},
+    
+    // Rule 1: A' → A (Augmented Grammar)
+    {NT_PRIME, {NT_A}, 1, 1},
+    
+    // Rule 2: A → C
+    {NT_A, {NT_C}, 1, 2},
+    
+    // Rule 3: C → B C
+    {NT_C, {NT_B, NT_C}, 2, 3},
+    
+    // Rule 4: C → ε
+    {NT_C, {}, 0, 4},
+    
+    // Rule 5: B → D
+    {NT_B, {NT_D}, 1, 5},
+    
+    // Rule 6: B → E F
+    {NT_B, {NT_E, NT_F}, 2, 6},
+    
+    // Rule 7: D → class id J { } ;
+    {NT_D, {-TKN_CLASS, -TKN_ID, NT_J, -TKN_LBRACE, -TKN_RBRACE, -TKN_SEMICOLON}, 6, 7},
+    
+    // Rule 8: E → O P id
+    {NT_E, {NT_O, NT_P, -TKN_ID}, 3, 8},
+    
+    // Rule 9: O → int
+    {NT_O, {-TKN_INT}, 1, 9},
+    
+    // Rule 10: O → char
+    {NT_O, {-TKN_CHAR}, 1, 10},
+    
+    // Rule 11: O → long
+    {NT_O, {-TKN_LONG}, 1, 11},
+    
+    // Rule 12: O → float
+    {NT_O, {-TKN_FLOAT}, 1, 12},
+    
+    // Rule 13: O → double
+    {NT_O, {-TKN_DOUBLE}, 1, 13},
+    
+    // Rule 14: O → string
+    {NT_O, {-TKN_STRING}, 1, 14},
+    
+    // Rule 15: O → void
+    {NT_O, {-TKN_VOID}, 1, 15},
+    
+    // Rule 16: O → id
+    {NT_O, {-TKN_ID}, 1, 16},
+    
+    // Rule 17: P → *
+    {NT_P, {-TKN_STAR}, 1, 17},
+    
+    // Rule 18: P → &
+    {NT_P, {-TKN_AMPERSAND}, 1, 18},
+    
+    // Rule 19: P → ε 
+    {NT_P, {}, 0, 19},
+    
+    // Rule 20: J → : K
+    {NT_J, {-TKN_COLON, NT_K}, 2, 20},
+    
+    // Rule 21: J → ε
+    {NT_J, {}, 0, 21},
+    
+    // Rule 22: K → K , L
+    {NT_K, {NT_K, -TKN_COMMA, NT_L}, 3, 22},
+    
+    // Rule 23: K → L
+    {NT_K, {NT_L}, 1, 23},
+    
+    // Rule 24: L → M id
+    {NT_L, {NT_M, -TKN_ID}, 2, 24},
+    
+    // Rule 25: L → id
+    {NT_L, {-TKN_ID}, 1, 25},
+    
+    // Rule 26: M → public
+    {NT_M, {-TKN_PUBLIC}, 1, 26},
+    
+    // Rule 27: M → private
+    {NT_M, {-TKN_PRIVATE}, 1, 27},
+    
+    // Rule 28: M → protected
+    {NT_M, {-TKN_PROTECTED}, 1, 28},
+    
+    // Rule 29: G → N
+    {NT_G, {NT_N}, 1, 29},
+    
+    // Rule 30: G → ε
+    {NT_G, {}, 0, 30},
+    
+    // Rule 31: N → N , E
+    {NT_N, {NT_N, -TKN_COMMA, NT_E}, 3, 31},
+    
+    // Rule 32: N → E
+    {NT_N, {NT_E}, 1, 32},
+    
+    // Rule 33: F → ( G ) { }
+    {NT_F, {-TKN_LPAREN, NT_G, -TKN_RPAREN, -TKN_LBRACE, -TKN_RBRACE}, 5, 33},
+    
+    // Rule 34: F → ;
+    {NT_F, {-TKN_SEMICOLON}, 1, 34},
+};
 
 const char* token_type_to_string(TokenType type) {
     switch (type) {
@@ -216,7 +380,7 @@ void lexer_skip_comments(Lexer* lexer) {
         lexer_advance(lexer);
         lexer_advance(lexer);
 
-        while(lexer->current_char != '*' && lexer_peek(lexer) != '/' && lexer->current_char != '\0'){
+        while((lexer->current_char != '*' && lexer_peek(lexer) != '/') && lexer->current_char != '\0'){
             if(lexer->current_char == '\n'){
                 lexer->line++;
                 lexer->column=0;
@@ -278,9 +442,6 @@ Token* lexer_two_char_token(Lexer* lexer, TokenType type) {
     return create_token(type, token_buffer, lexer->line);
 }
 
-/*[PERCHANCE]
-    Escape sequences '\n', '\t'
-*/
 Token* lexer_char_or_string(Lexer* lexer, int line) {
     if(lexer->current_char == '\''){
         lexer_advance(lexer);
@@ -344,6 +505,9 @@ Token* lexer_char_or_string(Lexer* lexer, int line) {
     return create_token(TKN_ERROR, "String literal unclosed", line);
 }
 
+/*
+struct{}; -> ignorar todo literalmente 
+*/
 Token* lexer_identifier(Lexer* lexer, int line) {
     char token_buffer[256];
     int token_position = 0;
@@ -353,7 +517,7 @@ Token* lexer_identifier(Lexer* lexer, int line) {
         lexer_advance(lexer);
     }
 
-    token_buffer[token_position++] = '\0';
+    token_buffer[token_position] = '\0';
 
     if (strcmp(token_buffer, "char") == 0) return create_token(TKN_CHAR, token_buffer, line);
     if (strcmp(token_buffer, "int") == 0) return create_token(TKN_INT, token_buffer, line);
@@ -573,3 +737,4 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+
