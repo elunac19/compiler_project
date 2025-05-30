@@ -5,96 +5,6 @@
 #include <string.h>
 #include "compiler.h"
 
-typedef enum {
-    NT_PRIME,
-    NT_A, // program
-    NT_C, // Declaration list  
-    NT_B, // Declaration
-    NT_D, // Class declaration
-    NT_E, // Type with modifiers
-    NT_F, // Function or variable end
-    NT_G, // Parameter list
-    NT_J, // Inheritance part
-    NT_K, // Base class list
-    NT_L, // Base class item
-    NT_M, // Access modifier
-    NT_N, // Non-empty parameter list
-    NT_O, // Type specifier
-    NT_P, // Pointer/reference modifier
-    NUM_NON_TERMINALS
-} NonTerminal;
-
-typedef enum {
-    ACTION_SHIFT,
-    ACTION_REDUCE,
-    ACTION_ACCEPT,
-    ACTION_ERROR
-} ActionType;
-
-typedef struct {
-    TokenType type;
-    char* lexeme; 
-    int line;
-    
-    union {
-        char char_value;
-        int int_value;
-        long long_value;
-        float float_value;
-        double double_value;
-        char *string_value;
-    } value;
-} Token;
-
-typedef struct {
-    // Source code (str) 
-    char* buffer;
-    // Length of source code   
-    size_t buffer_len;
-    // Current position
-    size_t position;
-    // Current line
-    size_t line;
-    // Current column
-    size_t column;
-    // Current character being processed
-    char current_char;
-} Lexer;
-
-typedef struct {
-    NonTerminal left;           
-    int right[10];       
-    int right_count;           
-    int rule_num;              
-} GrammarRule;
-
-typedef struct {
-    ActionType type;
-    int state_or_rule;  
-} ParserAction;
-
-typedef struct {
-    int next_state;
-} GotoEntry;
-
-typedef struct {
-    int state;
-    int symbol;  
-    Token* token; 
-} StackItem;
-
-typedef struct {
-    Lexer* lexer;
-    Token* current_token;
-    StackItem* stack;
-    int stack_top;
-    int stack_capacity;
-    ParserAction action_table[100][100];  
-    GotoEntry goto_table[100][50];        
-    GrammarRule* grammar;
-    int num_rules;
-} Parser;
-
 GrammarRule grammar_rules[] = {
     // Empece mi tabla en el 1 y no quiero cambiar todo XD
     {0, {}, 0, 0},
@@ -1124,6 +1034,7 @@ int test_parser(char* source_code) {
     argc -> number of arguments
     argv -> array of the arguments
 */
+#ifdef NOT_TEST
 int main(int argc, char* argv[]) {
 
     if(argc > 2){
@@ -1185,3 +1096,4 @@ int main(int argc, char* argv[]) {
 
     return parse_result ? 0 : 1;
 }
+#endif 
