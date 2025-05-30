@@ -6,9 +6,9 @@
 #include <ctype.h>
 #include <string.h>
 
-
+// Grammar rules for the parser, defining the syntax of the language
 GrammarRule grammar_rules[] = {
-    // Empece mi tabla en el 1 y no quiero cambiar todo XD
+    // Empece mi tabla en el 1
     {0, {}, 0, 0},
     
     // Rule 1: A' → A (Augmented Grammar)
@@ -114,6 +114,7 @@ GrammarRule grammar_rules[] = {
     {NT_F, {-TKN_SEMICOLON}, 1, 34},
 };
 
+// Converts a TokenType enum value to its string representation for debugging
 const char* token_type_to_string(TokenType type) {
     switch (type) {
         // DataType Keywords
@@ -158,6 +159,8 @@ const char* token_type_to_string(TokenType type) {
     }
 }
 
+// Initializes a new lexer with the given source code buffer
+// Returns a pointer to the newly created lexer
 Lexer* init_lexer(char* buffer) {
     Lexer* lexer = malloc(sizeof(Lexer));
     lexer->buffer = buffer;
@@ -169,6 +172,8 @@ Lexer* init_lexer(char* buffer) {
     return lexer;
 }
 
+// Creates a new token with the given type, lexeme, and line number
+// Returns a pointer to the newly created token
 Token* create_token(TokenType type, char* lexeme, int line) {
     Token* token = malloc(sizeof(Token));
     token->type = type;
@@ -177,6 +182,7 @@ Token* create_token(TokenType type, char* lexeme, int line) {
     return token;
 }
 
+// Advances the lexer to the next character in the input buffer
 void lexer_advance(Lexer* lexer) {
     if(lexer->position < lexer->buffer_len){
         lexer->position++;
@@ -187,6 +193,7 @@ void lexer_advance(Lexer* lexer) {
     }
 }
 
+// Skips whitespace characters (spaces and newlines) in the input
 void lexer_skip_whitespace(Lexer* lexer) {
     while(lexer->current_char == ' ' || lexer->current_char == '\n'){
         if(lexer->current_char == '\n'){
@@ -197,6 +204,8 @@ void lexer_skip_whitespace(Lexer* lexer) {
     }
 }
 
+// Peeks at the next character in the input without advancing the lexer
+// Returns the next character or '\0' if at end of input
 char lexer_peek(Lexer* lexer) {
     if(lexer->position + 1 >= lexer->buffer_len){
         return '\0';
@@ -204,6 +213,8 @@ char lexer_peek(Lexer* lexer) {
     return lexer->buffer[lexer->position + 1];
 }
 
+// Skips over variable/function declarations after an equals sign
+// Handles nested parentheses and braces
 void lexer_skip_equal_decl(Lexer* lexer){
     if(lexer->current_char == '='){
         lexer_advance(lexer);
@@ -236,6 +247,8 @@ void lexer_skip_equal_decl(Lexer* lexer){
     }
 }
 
+// Skips over comments in the input
+// Handles both single-line (//) and multi-line (/* */) comments
 void lexer_skip_comments(Lexer* lexer) {
     if(lexer->current_char == '/' && lexer_peek(lexer) == '/'){
         while(lexer->current_char != '\n' && lexer->current_char != '\0'){
@@ -259,6 +272,8 @@ void lexer_skip_comments(Lexer* lexer) {
     }
 }
 
+// Skips over special C++ identifiers like template, using, typedef, etc.
+// Returns 1 if a special identifier was skipped, 0 otherwise
 int lexer_skip_special_identifiers(Lexer* lexer) {
     int start_pos = lexer->position;
     int start_col = lexer->column;
@@ -319,12 +334,16 @@ int lexer_skip_special_identifiers(Lexer* lexer) {
     return 0;
 }
 
+// Creates a token for a single character operator
+// Advances the lexer after creating the token
 Token* lexer_single_char_token(Lexer* lexer, TokenType type) {
     char token_buffer[] = {lexer->current_char, '\0'};
     lexer_advance(lexer);
     return create_token(type, token_buffer, lexer->line);
 }
 
+// Creates a token for a two-character operator
+// Advances the lexer twice after creating the token
 Token* lexer_two_char_token(Lexer* lexer, TokenType type) {
     char token_buffer[] = {lexer->current_char, lexer_peek(lexer), '\0'};
     lexer_advance(lexer);
@@ -332,9 +351,8 @@ Token* lexer_two_char_token(Lexer* lexer, TokenType type) {
     return create_token(type, token_buffer, lexer->line);
 }
 
-/*
-struct{}; -> ignorar todo literalmente 
-*/
+// Processes an identifier or keyword from the input
+// Returns a token with the appropriate type (keyword or identifier)
 Token* lexer_identifier(Lexer* lexer, int line) {
     char token_buffer[256];
     int token_position = 0;
@@ -380,6 +398,8 @@ Token* lexer_identifier(Lexer* lexer, int line) {
     return create_token(TKN_ID, token_buffer, line);
 }
 
+// Gets the next token from the input
+// Handles all token types and advances the lexer appropriately
 Token* lexer_get_next_token(Lexer* lexer) {
     while(lexer->current_char != '\0'){
         if (lexer->current_char == ' ' || lexer->current_char == '\n') {
@@ -519,6 +539,7 @@ Token* lexer_get_next_token(Lexer* lexer) {
     return create_token(TKN_EOF, "", lexer->line);
 }
 
+// Gets the size of a file in bytes
 long get_file_size(FILE* file){
     fseek(file, 0, SEEK_END);
     long size = ftell(file);
@@ -526,6 +547,8 @@ long get_file_size(FILE* file){
     return size;
 }
 
+// Pushes a new item onto the parser's stack
+// Automatically resizes the stack if needed
 void push_stack(Parser* parser, int state, int symbol, Token* token) {
     if (parser->stack_top >= parser->stack_capacity - 1) {
         parser->stack_capacity *= 2;
@@ -538,6 +561,8 @@ void push_stack(Parser* parser, int state, int symbol, Token* token) {
     parser->stack[parser->stack_top].token = token;
 }
 
+// Pops the top item from the parser's stack
+// Returns the popped item or an empty item if stack is empty
 StackItem pop_stack(Parser* parser) {
     if (parser->stack_top >= 0) {
         return parser->stack[parser->stack_top--];
@@ -547,6 +572,8 @@ StackItem pop_stack(Parser* parser) {
     return empty;
 }
 
+// Initializes the parser's action and goto tables
+// Sets up all the parsing states and transitions
 void init_parse_tables(Parser* parser) {
     // Initialize all entries to ERROR
     for (int i = 0; i < 100; i++) {
@@ -850,6 +877,8 @@ void init_parse_tables(Parser* parser) {
     parser->action_table[50][21] = (ParserAction){ACTION_REDUCE, 2}; // $
 }
 
+// Initializes a new parser with the given lexer
+// Sets up the initial parsing state and stack
 Parser* init_parser(Lexer* lexer) {
     Parser* parser = malloc(sizeof(Parser));
     parser->lexer = lexer;
@@ -868,6 +897,8 @@ Parser* init_parser(Lexer* lexer) {
     return parser;
 }
 
+// Converts a token type to its corresponding terminal index in the parsing tables
+// Returns -1 for unknown token types
 int token_to_terminal_index(TokenType token_type) {
     switch (token_type) {
         case TKN_CLASS: return 0;
@@ -896,6 +927,8 @@ int token_to_terminal_index(TokenType token_type) {
     }
 }
 
+// Gets the current state from the top of the parser's stack
+// Returns 0 if stack is empty
 int get_current_state(Parser* parser) {
     if (parser->stack_top >= 0) {
         return parser->stack[parser->stack_top].state;
@@ -903,6 +936,7 @@ int get_current_state(Parser* parser) {
     return 0;
 }
 
+// Converts a non-terminal enum value to its string representation
 const char* non_terminal_to_string(NonTerminal nt) {
     switch (nt) {
         case NT_A: return "A";
@@ -923,6 +957,8 @@ const char* non_terminal_to_string(NonTerminal nt) {
     }
 }
 
+// Performs the actual parsing of the input
+// Returns 1 if parsing succeeds and input is OOP code, 0 if parsing succeeds but not OOP, -1 if parsing fails
 int parse(Parser* parser) {
     printf("Starting parse...\n");
     int is_oop = 0;
@@ -993,11 +1029,14 @@ int parse(Parser* parser) {
     }
 }
 
+// Frees all memory allocated for the parser
 void free_parser(Parser* parser) {
     free(parser->stack);
     free(parser);
 }
 
+// Tests the parser with the given source code
+// Returns 1 if parsing succeeds and input is OOP code, 0 if parsing succeeds but not OOP, -1 if parsing fails
 int test_parser(char* source_code) {
     Lexer* lexer = init_lexer(source_code);
     Parser* parser = init_parser(lexer);

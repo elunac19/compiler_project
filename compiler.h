@@ -101,14 +101,14 @@ typedef struct {
 
 typedef struct {
     NonTerminal left;           
-    int right[10];       
+    int right[10];
     int right_count;           
     int rule_num;              
 } GrammarRule;
 
 typedef struct {
     ActionType type;
-    int state_or_rule;  
+    int state_or_rule; 
 } ParserAction;
 
 typedef struct {
