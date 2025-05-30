@@ -1,6 +1,9 @@
 # compiler_project
 A lightweight C++ code analyzer that determines whether a given codebase uses object-oriented programming principles.
 
+> The compiler is based on a custom grammar designed for **LALR(1)** parsing, enabling efficient and unambiguous syntax analysis.
+
+
 ## Requirements
 - GCC compiler (tested with gcc)
 - Make build system
@@ -65,3 +68,29 @@ The test runner will provide detailed statistics about the analysis, including:
 - Precision
 - Recall
 - Valid/Invalid file detection rates
+
+## Gramática del compilador
+
+```bnf
+A → C  
+C → B C | ε  
+B → D | E F  
+F → ( G ) { } | ;  
+
+D → class id J { } ;  
+J → : K | ε  
+K → K , L | L  
+L → M id | id  
+M → public | private | protected  
+
+G → N | ε  
+N → N , E | E  
+
+E → O P id  
+O → int | char | long | float | double | string | void | id  
+P → * | & | ε
+```
+
+## Visualización del estados
+
+![Estado del análisis](/doc/estados.png)
