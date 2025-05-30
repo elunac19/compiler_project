@@ -3,83 +3,11 @@
 #include <string.h>
 #include <ctype.h>
 #include <string.h>
-
-typedef enum {
-    //DataType Keywords
-    TKN_CHAR,       
-    TKN_INT,      
-    TKN_LONG,       
-    TKN_FLOAT,
-    TKN_DOUBLE,
-    TKN_STRING,
-    TKN_VOID,
-
-    //OOP Keywords
-    TKN_CLASS,    
-    TKN_PUBLIC,   
-    TKN_PRIVATE,  
-    TKN_PROTECTED,
-
-    TKN_COLON,
-    TKN_AMPERSAND,
-    TKN_STAR,
-    
-    //Libraries
-    TKN_HASH,          
-
-    //Identifiers and literals
-    TKN_ID,
-
-    TKN_CHAR_LIT,
-    TKN_STRING_LIT,
-
-    //Punctuation
-    TKN_LPAREN,
-    TKN_RPAREN,
-    TKN_LBRACE,
-    TKN_RBRACE,
-    TKN_LBRACKET,
-    TKN_RBRACKET,
-    TKN_SEMICOLON,
-    TKN_COMMA,
-
-    //Other
-    TKN_ERROR,
-    TKN_EOF
-} TokenType;
+#include "compiler.h"
 
 /*[PERCHANCE]
     ValueType 
 */
-typedef struct {
-    TokenType type;
-    char* lexeme; 
-    int line;
-    
-    union {
-        char char_value;
-        int int_value;
-        long long_value;
-        float float_value;
-        double double_value;
-        char *string_value;
-    } value;
-} Token;
-
-typedef struct {
-    // Source code (str) 
-    char* buffer;
-    // Length of source code   
-    size_t buffer_len;
-    // Current position
-    size_t position;
-    // Current line
-    size_t line;
-    // Current column
-    size_t column;
-    // Current character being processed
-    char current_char;
-} Lexer;
 
 const char* token_type_to_string(TokenType type) {
     switch (type) {
@@ -522,10 +450,7 @@ long get_file_size(FILE* file){
     return size;
 }
 
-/*[INSIGHT]
-    argc -> number of arguments
-    argv -> array of the arguments
-*/
+#ifndef TEST
 int main(int argc, char* argv[]) {
 
     if(argc > 2){
@@ -573,3 +498,4 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+#endif
