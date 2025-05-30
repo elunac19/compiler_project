@@ -1127,7 +1127,7 @@ ACTION:
 
 Estado I15
 ACTION:
-    {: S16 (Shift/Reduce conflict for R21, resolving to Shift)
+    {: R21
     :: S20
 GOTO:
     J: 16  
