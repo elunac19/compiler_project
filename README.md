@@ -69,7 +69,7 @@ The test runner will provide detailed statistics about the analysis, including:
 - Recall
 - Valid/Invalid file detection rates
 
-## Gramática del compilador
+## Compiler Grammar
 
 ```bnf
 A → C  
@@ -91,6 +91,6 @@ O → int | char | long | float | double | string | void | id
 P → * | & | ε
 ```
 
-## Visualización del estados
+## States
 
 ![Estado del análisis](/doc/estados.png)
