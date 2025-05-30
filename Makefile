@@ -1,4 +1,6 @@
-.PHONY: clean test oop pp unit_test oop_test
+.PHONY: clean test oop pp unit_test oop_test all
+
+all: unit_test oop_test
 
 clean: 
 	rm -f ./build/oop
