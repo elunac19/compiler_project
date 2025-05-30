@@ -290,6 +290,29 @@ int lexer_skip_special_identifiers(Lexer* lexer) {
         return 1;
     }
 
+    if (strcmp(token_buffer, "struct") == 0) {
+        int brace_count = 0;
+
+        while (lexer->current_char != '\0' && lexer->current_char != '{') {
+            lexer_advance(lexer);
+        }
+    
+        if (lexer->current_char == '{') {
+            brace_count++;
+            lexer_advance(lexer);
+    
+            while (lexer->current_char != '\0' && brace_count > 0) {
+                if (lexer->current_char == '{') {
+                    brace_count++;
+                } else if (lexer->current_char == '}') {
+                    brace_count--;
+                }
+                lexer_advance(lexer);
+            }
+        }
+        lexer_advance(lexer);
+        return 1;
+    }
     lexer->position = start_pos;
     lexer->column = start_col;
     lexer->current_char = lexer->buffer[lexer->position];
@@ -486,46 +509,6 @@ long get_file_size(FILE* file){
     return size;
 }
 
-Parser* init_parser(Lexer* lexer) {
-    Parser* parser = malloc(sizeof(Parser));
-    parser->lexer = lexer;
-    parser->current_token = lexer_get_next_token(lexer);
-    parser->stack_capacity = 1000;
-    parser->stack = malloc(sizeof(StackItem) * parser->stack_capacity);
-    parser->stack_top = -1;
-    parser->grammar = grammar_rules;
-    parser->num_rules = sizeof(grammar_rules) / sizeof(GrammarRule);;
-    return parser;
-}
-
-int token_to_terminal_index(TokenType token_type) {
-    switch (token_type) {
-        case TKN_CLASS: return 0;
-        case TKN_ID: return 1;
-        case TKN_COLON: return 2;
-        case TKN_COMMA: return 3;
-        case TKN_PUBLIC: return 4;
-        case TKN_PRIVATE: return 5;
-        case TKN_PROTECTED: return 6;
-        case TKN_LPAREN: return 7;
-        case TKN_RPAREN: return 8;
-        case TKN_LBRACE: return 9;
-        case TKN_RBRACE: return 10;
-        case TKN_SEMICOLON: return 11;
-        case TKN_INT: return 12;
-        case TKN_CHAR: return 13;
-        case TKN_LONG: return 14;
-        case TKN_FLOAT: return 15;
-        case TKN_DOUBLE: return 16;
-        case TKN_STRING: return 17;
-        case TKN_VOID: return 18;
-        case TKN_STAR: return 19;
-        case TKN_AMPERSAND: return 20;
-        case TKN_EOF: return 21;
-        default: return -1;
-    }
-}
-
 void push_stack(Parser* parser, int state, int symbol, Token* token) {
     if (parser->stack_top >= parser->stack_capacity - 1) {
         parser->stack_capacity *= 2;
@@ -545,13 +528,6 @@ StackItem pop_stack(Parser* parser) {
     // Return empty item if stack is empty
     StackItem empty = {-1, 0, NULL};
     return empty;
-}
-
-int get_current_state(Parser* parser) {
-    if (parser->stack_top >= 0) {
-        return parser->stack[parser->stack_top].state;
-    }
-    return 0;
 }
 
 void init_parse_tables(Parser* parser) {
@@ -642,7 +618,7 @@ void init_parse_tables(Parser* parser) {
     parser->action_table[14][1] = (ParserAction){ACTION_SHIFT, 15}; // id
 
     // Estado I15
-    parser->action_table[15][9] = (ParserAction){ACTION_SHIFT, 16}; // {
+    parser->action_table[15][9] = (ParserAction){ACTION_REDUCE, 21}; // {
     parser->action_table[15][2] = (ParserAction){ACTION_SHIFT, 20}; // :
     parser->goto_table[15][NT_J] = (GotoEntry){16};
 
@@ -857,6 +833,59 @@ void init_parse_tables(Parser* parser) {
     parser->action_table[50][21] = (ParserAction){ACTION_REDUCE, 2}; // $
 }
 
+Parser* init_parser(Lexer* lexer) {
+    Parser* parser = malloc(sizeof(Parser));
+    parser->lexer = lexer;
+    parser->current_token = lexer_get_next_token(lexer);
+    parser->stack_capacity = 1000;
+    parser->stack = malloc(sizeof(StackItem) * parser->stack_capacity);
+    parser->stack_top = -1;
+    parser->grammar = grammar_rules;
+    parser->num_rules = sizeof(grammar_rules) / sizeof(GrammarRule);
+
+    init_parse_tables(parser);
+    
+    // Inicializar la pila con el estado 0
+    push_stack(parser, 0, -1, NULL);
+
+    return parser;
+}
+
+int token_to_terminal_index(TokenType token_type) {
+    switch (token_type) {
+        case TKN_CLASS: return 0;
+        case TKN_ID: return 1;
+        case TKN_COLON: return 2;
+        case TKN_COMMA: return 3;
+        case TKN_PUBLIC: return 4;
+        case TKN_PRIVATE: return 5;
+        case TKN_PROTECTED: return 6;
+        case TKN_LPAREN: return 7;
+        case TKN_RPAREN: return 8;
+        case TKN_LBRACE: return 9;
+        case TKN_RBRACE: return 10;
+        case TKN_SEMICOLON: return 11;
+        case TKN_INT: return 12;
+        case TKN_CHAR: return 13;
+        case TKN_LONG: return 14;
+        case TKN_FLOAT: return 15;
+        case TKN_DOUBLE: return 16;
+        case TKN_STRING: return 17;
+        case TKN_VOID: return 18;
+        case TKN_STAR: return 19;
+        case TKN_AMPERSAND: return 20;
+        case TKN_EOF: return 21;
+        default: return -1;
+    }
+}
+
+int get_current_state(Parser* parser) {
+    if (parser->stack_top >= 0) {
+        return parser->stack[parser->stack_top].state;
+    }
+    return 0;
+}
+
 const char* non_terminal_to_string(NonTerminal nt) {
     switch (nt) {
         case NT_A: return "A";
@@ -1014,15 +1043,15 @@ int main(int argc, char* argv[]) {
     
     free(lexer);
 
-    // // Análisis sintáctico (parsing)
-    // printf("\n=== SYNTAX ANALYSIS ===\n");
-    // int parse_result = test_parser(buffer);
+    // Análisis sintáctico (parsing)
+    printf("\n=== SYNTAX ANALYSIS ===\n");
+    int parse_result = test_parser(buffer);
     
-    // if (parse_result) {
-    //     printf("Parsing successful!\n");
-    // } else {
-    //     printf("Parsing failed!\n");
-    // }
+    if (parse_result) {
+        printf("Parsing successful!\n");
+    } else {
+        printf("Parsing failed!\n");
+    }
 
     // Limpieza de memoria
     free(buffer);

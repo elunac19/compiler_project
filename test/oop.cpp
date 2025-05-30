@@ -6,8 +6,13 @@
 
 using namespace std;
 
+struct Persona {
+    std::string nombre;
+    int edad;
+};
+
 // ==================== CLASE BASE ABSTRACTA ====================
-class Vehiculo {
+class Vehiculo{
 protected:
     string marca;
     string modelo;
@@ -43,7 +48,7 @@ public:
 };
 
 // ==================== CLASES DERIVADAS ====================
-class Automovil : public Vehiculo {
+class Automovil : Vehiculo {
 private:
     int numeroPuertas;
     string tipoTransmision;
@@ -88,7 +93,7 @@ public:
     }
 };
 
-class Motocicleta : public Vehiculo {
+class Motocicleta : public Vehiculo, private Vehiculo {
 private:
     int cilindrada;
     string tipoMotor;
