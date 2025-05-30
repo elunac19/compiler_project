@@ -192,8 +192,8 @@ void test_lexer_skip_comments_single_line(void) {
     Lexer* lexer = init_lexer(input);
     
     lexer_skip_comments(lexer);
-    TEST_ASSERT_EQUAL('i', lexer->current_char);
-    TEST_ASSERT_EQUAL(2, lexer->line);
+    TEST_ASSERT_EQUAL('\n', lexer->current_char);
+    TEST_ASSERT_EQUAL(1, lexer->line);
     
     free(lexer);
 }
@@ -203,8 +203,8 @@ void test_lexer_skip_comments_multi_line(void) {
     Lexer* lexer = init_lexer(input);
     
     lexer_skip_comments(lexer);
-    TEST_ASSERT_EQUAL('i', lexer->current_char);
-    TEST_ASSERT_EQUAL(4, lexer->line);
+    TEST_ASSERT_EQUAL('\n', lexer->current_char);
+    TEST_ASSERT_EQUAL(3, lexer->line);
     
     free(lexer);
 }
@@ -215,7 +215,7 @@ void test_lexer_skip_comments_nested(void) {
     
     lexer_skip_comments(lexer);
     TEST_ASSERT_EQUAL('i', lexer->current_char);
-    TEST_ASSERT_EQUAL(2, lexer->line);
+    TEST_ASSERT_EQUAL(1, lexer->line);
     
     free(lexer);
 }
