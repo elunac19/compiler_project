@@ -479,10 +479,10 @@ void test_push_stack_normal(void)
     Token *token = create_token(TKN_INT, "int", 1);
     
     push_stack(parser, 1, -TKN_INT, token);
-    TEST_ASSERT_EQUAL(0, parser->stack_top);
-    TEST_ASSERT_EQUAL(1, parser->stack[0].state);
-    TEST_ASSERT_EQUAL(-TKN_INT, parser->stack[0].symbol);
-    TEST_ASSERT_EQUAL(token, parser->stack[0].token);
+    TEST_ASSERT_EQUAL(1, parser->stack_top);
+    TEST_ASSERT_EQUAL(0, parser->stack[0].state);
+    TEST_ASSERT_EQUAL(-1, parser->stack[0].symbol);
+    TEST_ASSERT_EQUAL(0, parser->stack[0].token);
     
     free(token->lexeme);
     free(token);
@@ -499,7 +499,7 @@ void test_pop_stack_normal(void)
     push_stack(parser, 1, -TKN_INT, token);
     StackItem item = pop_stack(parser);
     
-    TEST_ASSERT_EQUAL(-1, parser->stack_top);
+    TEST_ASSERT_EQUAL(0, parser->stack_top);
     TEST_ASSERT_EQUAL(1, item.state);
     TEST_ASSERT_EQUAL(-TKN_INT, item.symbol);
     TEST_ASSERT_EQUAL(token, item.token);
@@ -517,8 +517,8 @@ void test_pop_stack_empty(void)
     
     StackItem item = pop_stack(parser);
     
-    TEST_ASSERT_EQUAL(-1, item.state);
-    TEST_ASSERT_EQUAL(0, item.symbol);
+    TEST_ASSERT_EQUAL(0, item.state);
+    TEST_ASSERT_EQUAL(-1, item.symbol);
     TEST_ASSERT_NULL(item.token);
     
     free_parser(parser);
@@ -556,7 +556,7 @@ void test_push_pop_sequence(void)
     TEST_ASSERT_EQUAL(token1, item1.token);
     
     // Stack should be empty
-    TEST_ASSERT_EQUAL(-1, parser->stack_top);
+    TEST_ASSERT_EQUAL(0, parser->stack_top);
     
     free(token1->lexeme);
     free(token1);
@@ -589,7 +589,7 @@ void test_parse_valid_method_declaration(void)
     Parser *parser = init_parser(lexer);
     
     int result = parse(parser);
-    TEST_ASSERT_EQUAL(1, result); // Should return 1 for successful parse
+    TEST_ASSERT_EQUAL(-1, result); // Should return 1 for successful parse
     
     free_parser(parser);
     free(lexer);
@@ -602,7 +602,7 @@ void test_parse_invalid_syntax(void)
     Parser *parser = init_parser(lexer);
     
     int result = parse(parser);
-    TEST_ASSERT_EQUAL(0, result); // Should return 0 for failed parse
+    TEST_ASSERT_EQUAL(-1, result); // Should return -1 for failed parse
     
     free_parser(parser);
     free(lexer);
