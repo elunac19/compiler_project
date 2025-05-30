@@ -335,73 +335,6 @@ void test_lexer_two_char_token_comment_block_start(void)
     free(lexer);
 }
 
-// Test lexer_char_or_string functionality
-void test_lexer_char_or_string_single_char(void)
-{
-    char *input = "'a'";
-    Lexer *lexer = init_lexer(input);
-
-    Token *token = lexer_char_or_string(lexer, 1);
-    TEST_ASSERT_NOT_NULL(token);
-    TEST_ASSERT_EQUAL(TKN_CHAR_LIT, token->type);
-    TEST_ASSERT_EQUAL_STRING("a", token->lexeme);
-    TEST_ASSERT_EQUAL('a', token->value.char_value);
-    TEST_ASSERT_EQUAL(1, token->line);
-
-    free(token->lexeme);
-    free(token);
-    free(lexer);
-}
-
-void test_lexer_char_or_string_empty_char(void)
-{
-    char *input = "''";
-    Lexer *lexer = init_lexer(input);
-
-    Token *token = lexer_char_or_string(lexer, 1);
-    TEST_ASSERT_NOT_NULL(token);
-    TEST_ASSERT_EQUAL(TKN_ERROR, token->type);
-    TEST_ASSERT_EQUAL_STRING("Char literal empty", token->lexeme);
-    TEST_ASSERT_EQUAL(1, token->line);
-
-    free(token->lexeme);
-    free(token);
-    free(lexer);
-}
-
-void test_lexer_char_or_string_string_lit(void)
-{
-    char *input = "\"hello world\"";
-    Lexer *lexer = init_lexer(input);
-
-    Token *token = lexer_char_or_string(lexer, 1);
-    TEST_ASSERT_NOT_NULL(token);
-    TEST_ASSERT_EQUAL(TKN_STRING_LIT, token->type);
-    TEST_ASSERT_EQUAL_STRING("hello world", token->lexeme);
-    TEST_ASSERT_EQUAL_STRING("hello world", token->value.string_value);
-    TEST_ASSERT_EQUAL(1, token->line);
-
-    free(token->lexeme);
-    free(token);
-    free(lexer);
-}
-
-void test_lexer_char_or_string_unclosed_string(void)
-{
-    char *input = "\"hello world";
-    Lexer *lexer = init_lexer(input);
-
-    Token *token = lexer_char_or_string(lexer, 1);
-    TEST_ASSERT_NOT_NULL(token);
-    TEST_ASSERT_EQUAL(TKN_ERROR, token->type);
-    TEST_ASSERT_EQUAL_STRING("String literal unclosed", token->lexeme);
-    TEST_ASSERT_EQUAL(1, token->line);
-
-    free(token->lexeme);
-    free(token);
-    free(lexer);
-}
-
 // Test lexer_identifier functionality
 void test_lexer_identifier_keyword(void)
 {
@@ -722,12 +655,6 @@ int main(void)
     // Run lexer_two_char_token tests
     RUN_TEST(test_lexer_two_char_token_comment_start);
     RUN_TEST(test_lexer_two_char_token_comment_block_start);
-
-    // Run lexer_char_or_string tests
-    RUN_TEST(test_lexer_char_or_string_single_char);
-    RUN_TEST(test_lexer_char_or_string_empty_char);
-    RUN_TEST(test_lexer_char_or_string_string_lit);
-    RUN_TEST(test_lexer_char_or_string_unclosed_string);
 
     // Run lexer_identifier tests
     RUN_TEST(test_lexer_identifier_keyword);

@@ -2,7 +2,6 @@
 #define COMPILER_H
 
 #include <stddef.h>
-
 typedef enum {
     //DataType Keywords
     TKN_CHAR,       
@@ -28,9 +27,6 @@ typedef enum {
 
     //Identifiers and literals
     TKN_ID,
-
-    TKN_CHAR_LIT,
-    TKN_STRING_LIT,
 
     //Punctuation
     TKN_LPAREN,
@@ -148,7 +144,6 @@ void lexer_skip_comments(Lexer* lexer);
 int lexer_skip_special_identifiers(Lexer* lexer);
 Token* lexer_single_char_token(Lexer* lexer, TokenType type);
 Token* lexer_two_char_token(Lexer* lexer, TokenType type);
-Token* lexer_char_or_string(Lexer* lexer, int line);
 Token* lexer_identifier(Lexer* lexer, int line);
 Token* lexer_get_next_token(Lexer* lexer);
 void push_stack(Parser* parser, int state, int symbol, Token* token);
