@@ -409,7 +409,24 @@ Token* lexer_get_next_token(Lexer* lexer) {
                 return lexer_single_char_token(lexer, TKN_AMPERSAND);
             }
             case '(': {
-                return lexer_single_char_token(lexer, TKN_LPAREN);
+                int paren_count = 1;
+                int line = lexer->line;
+                lexer_advance(lexer);
+
+                while (lexer->current_char != '\0' && paren_count > 0) {
+                    if (lexer->current_char == '(') {
+                        paren_count++;
+                    } else if (lexer->current_char == ')') {
+                        paren_count--;
+                        if (paren_count == 0) {
+                            break;
+                        }
+                    }
+
+                    lexer_advance(lexer);
+                }
+
+                return create_token(TKN_LPAREN, (char[]){'(','\0'}, line);
             }
             case ')': {
                 return lexer_single_char_token(lexer, TKN_RPAREN);
@@ -908,6 +925,7 @@ const char* non_terminal_to_string(NonTerminal nt) {
 
 int parse(Parser* parser) {
     printf("Starting parse...\n");
+    int is_oop = 0;
     
     while (1) {
         int current_state = get_current_state(parser);
@@ -915,11 +933,15 @@ int parse(Parser* parser) {
         
         if (terminal_index == -1) {
             printf("Error: Unknown token type %d\n", parser->current_token->type);
-            return 0;
+            return -1;
         }
         
         ParserAction action = parser->action_table[current_state][terminal_index];
         
+        if(parser->current_token->type == TKN_CLASS){
+            is_oop = 1;
+        }
+
         printf("State: %d, Token: %s, Action: ", current_state, 
                token_type_to_string(parser->current_token->type));
         
@@ -927,10 +949,6 @@ int parse(Parser* parser) {
             case ACTION_SHIFT:
                 printf("SHIFT %d\n", action.state_or_rule);
                 // Push current token and new state onto stack
-
-                if (parser->current_token->type == TKN_EOF) {
-                    return 1;
-                }
 
                 push_stack(parser, action.state_or_rule, -parser->current_token->type, parser->current_token);
                 // Get next token
@@ -955,7 +973,7 @@ int parse(Parser* parser) {
                 if (next_state == -1) {
                     printf("Error: No GOTO entry for state %d, non-terminal %s\n", 
                            current_state, non_terminal_to_string(rule.left));
-                    return 0;
+                    return -1;
                 }
                 push_stack(parser, next_state, rule.left, NULL);
                 break;
@@ -963,14 +981,14 @@ int parse(Parser* parser) {
             case ACTION_ACCEPT:
                 printf("ACCEPT\n");
                 printf("Parse successful!\n");
-                return 1;
+                return is_oop;
                 
             case ACTION_ERROR:
             default:
                 printf("ERROR\n");
                 printf("Parse error at line %d: unexpected token '%s'\n", 
                        parser->current_token->line, parser->current_token->lexeme);
-                return 0;
+                return -1;
         }
     }
 }
