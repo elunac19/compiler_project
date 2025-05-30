@@ -18,16 +18,6 @@ A lightweight C++ code analyzer that determines whether a given codebase uses ob
 └── Makefile        # Build configuration
 ```
 
-## Building the Project
-To build the project, simply run:
-```bash
-make
-```
-
-This will create the following executables in the `build` directory:
-- `unit_test`: Unit tests
-- `test_runner`: Comprehensive test runner
-
 ## Running Tests
 The project includes the following test options:
 
@@ -40,6 +30,16 @@ make oop_test
 ```bash
 make unit_test
 ```
+
+## Building the Project
+To build the project, simply run:
+```bash
+make
+```
+
+This will create the following executables in the `build` directory:
+- `unit_test`: Unit tests
+- `test_runner`: Comprehensive test runner
 
 ## Cleaning Build Files
 To remove all compiled binaries:
