@@ -1,9 +1,11 @@
+#include <compiler.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <string.h>
-#include "compiler.h"
+
 
 GrammarRule grammar_rules[] = {
     // Empece mi tabla en el 1 y no quiero cambiar todo XD
@@ -134,8 +136,6 @@ const char* token_type_to_string(TokenType type) {
 
         // Identifiers and literals
         case TKN_ID: return "TKN_ID";
-        case TKN_CHAR_LIT: return "TKN_CHAR_LIT";
-        case TKN_STRING_LIT: return "TKN_STRING_LIT";
 
         // Arithmetic Operators
         case TKN_STAR: return "TKN_STAR";
@@ -309,69 +309,6 @@ Token* lexer_two_char_token(Lexer* lexer, TokenType type) {
     return create_token(type, token_buffer, lexer->line);
 }
 
-Token* lexer_char_or_string(Lexer* lexer, int line) {
-    if(lexer->current_char == '\''){
-        lexer_advance(lexer);
-
-        // char c = '';
-        if(lexer->current_char == '\''){
-            lexer_advance(lexer);
-            return create_token(TKN_ERROR, "Char literal empty", line);
-        }
-
-        // char y = '
-        if(lexer->current_char == '\n' || lexer->current_char == '\0'){
-            return create_token(TKN_ERROR, "Char literal unclosed", line);
-        }
-        
-        // char x = 'sdaxzx'; || char v = 'aio
-        if(lexer_peek(lexer) != '\''){
-            while(lexer->current_char != '\'' && lexer->current_char != '\n' && lexer->current_char != '\0'){
-                lexer_advance(lexer);
-            }
-            if(lexer->current_char == '\''){
-                lexer_advance(lexer);
-                return create_token(TKN_ERROR, "Char literal too long", line);
-            }
-            return create_token(TKN_ERROR, "Char literal unclosed", line);
-        }
-
-        char token_buffer[] = {lexer->current_char, '\0'};
-        lexer_advance(lexer);
-        lexer_advance(lexer);
-
-        Token* token = create_token(TKN_CHAR_LIT, token_buffer, line);
-        token->value.char_value = token_buffer[0];
-        return token;
-    }
-
-    lexer_advance(lexer);
-
-    // char* x = " || string x = "
-    if(lexer->current_char == '\n' || lexer->current_char == '\0'){
-        return create_token(TKN_ERROR, "String literal unclosed", line);
-    }
-
-    char token_buffer[256]; 
-    int token_position = 0;
-
-    while(lexer->current_char != '"' && lexer->current_char != '\0' && lexer->current_char != '\n' && token_position < 255){
-        token_buffer[token_position++] = lexer->current_char;
-        lexer_advance(lexer);
-    }
-
-    if(lexer->current_char == '"'){
-        lexer_advance(lexer);
-        token_buffer[token_position] = '\0';
-    
-        Token* token = create_token(TKN_STRING_LIT, token_buffer, line);
-        token->value.string_value = token->lexeme;
-        return token;
-    }
-    
-    return create_token(TKN_ERROR, "String literal unclosed", line);
-}
-
 /*
 struct{}; -> ignorar todo literalmente 
 */
@@ -433,10 +370,6 @@ Token* lexer_get_next_token(Lexer* lexer) {
         }
 
         int line = lexer->line;
-        
-        if (lexer->current_char == '\'' || lexer->current_char == '"') {
-            return lexer_char_or_string(lexer, line);
-        }
 
         if (isalpha(lexer->current_char) || lexer->current_char == '_') {
            if (!lexer_skip_special_identifiers(lexer)) {
@@ -1081,19 +1014,19 @@ int main(int argc, char* argv[]) {
     
     free(lexer);
 
-    // Análisis sintáctico (parsing)
-    printf("\n=== SYNTAX ANALYSIS ===\n");
-    int parse_result = test_parser(buffer);
+    // // Análisis sintáctico (parsing)
+    // printf("\n=== SYNTAX ANALYSIS ===\n");
+    // int parse_result = test_parser(buffer);
     
-    if (parse_result) {
-        printf("Parsing successful!\n");
-    } else {
-        printf("Parsing failed!\n");
-    }
+    // if (parse_result) {
+    //     printf("Parsing successful!\n");
+    // } else {
+    //     printf("Parsing failed!\n");
+    // }
 
     // Limpieza de memoria
     free(buffer);
 
     return parse_result ? 0 : 1;
 }
-#endif 
+#endif
