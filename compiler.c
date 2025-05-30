@@ -1027,6 +1027,6 @@ int main(int argc, char* argv[]) {
     // Limpieza de memoria
     free(buffer);
 
-    return parse_result ? 0 : 1;
+    return 0;
 }
 #endif

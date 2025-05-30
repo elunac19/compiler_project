@@ -151,5 +151,6 @@ StackItem pop_stack(Parser* parser);
 int parse(Parser* parser);
 Parser* init_parser(Lexer* lexer);
 void free_parser(Parser* parser);
+int test_parser(char* source_code);
 
 #endif // COMPILER_H 
