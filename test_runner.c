@@ -18,7 +18,9 @@ void print_results(int total_tests, int correct_valid, int correct_invalid, int 
     float accuracy = (float)total_correct / total_tests * 100;
     float valid_accuracy = (float)correct_valid / total_valid * 100;
     float invalid_accuracy = (float)correct_invalid / total_invalid * 100;
-    
+    float preciscion = (float)correct_valid / total_valid * 100;
+    float recall = (float)correct_valid / (correct_valid + (total_invalid - correct_invalid)) * 100;
+
     printf("\n=== Test Results ===\n");
     printf("Valid Files:\n");
     printf("  Total valid files: %d\n", total_valid);
@@ -33,7 +35,9 @@ void print_results(int total_tests, int correct_valid, int correct_invalid, int 
     printf("\nOverall Results:\n");
     printf("  Total tests: %d\n", total_tests);
     printf("  Total correct: %d\n", total_correct);
-    printf("  Overall accuracy: %.2f%%\n", accuracy);
+    printf("  Accuracy: %.2f%%\n", accuracy);
+    printf("  Precision: %.2f%%\n", preciscion);
+    printf("  Recall: %.2f%%\n", recall);
 }
 
 int is_valid_oop_file(const char* filepath) {
